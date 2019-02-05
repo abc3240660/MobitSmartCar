@@ -1031,6 +1031,14 @@ u8 sim7500e_setup_initial(void)
 		if(sim7500e_send_cmd("AT+CGNSPWR=1","OK",40)) return 1;
 	}
 	
+	if(sim7500e_send_cmd("AT+CNMP=13","OK",40)) {
+		if(sim7500e_send_cmd("AT+CNMP=13","OK",40)) return 1;
+	}
+	
+	if(sim7500e_send_cmd("AT+CMNB=2","OK",40)) {
+		if(sim7500e_send_cmd("AT+CMNB=2","OK",40)) return 1;
+	}
+	
 	if(sim7500e_send_cmd("AT+CGATT?","+CGATT: 1",40)) {
 		if(sim7500e_send_cmd("AT+CGATT?","+CGATT: 1",40)) return 1;
 	}
@@ -1258,7 +1266,7 @@ void sim7500e_idle_actions(void)
 	if (g_gps_trace_gap) {
 		// every loop delay 10ms
 		if (1 == g_gps_active) {
-			g_gps_trace_gap = 0;
+			g_gps_active = 0;
 			sim7500e_do_gps_location_report();
 		}
 	}

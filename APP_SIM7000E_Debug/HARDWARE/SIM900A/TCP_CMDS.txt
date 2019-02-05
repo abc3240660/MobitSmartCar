@@ -1,0 +1,79 @@
+----------------DEV Host----------------
+
+Dev Locded
+>>>"^MOBIT,ECAR,IMEI,C1,$\n"
+   "^MOBIT,ECAR,IMEI,Re,C1,$\n"
+
+Dev Unlocaked success(Not After O0):
+>>>"^MOBIT,ECAR,IMEI,O1,$\n"
+   "^MOBIT,ECAR,IMEI,Re,O1,$\n" // if atfer Open CMD, no need to ACK
+   
+Invalid Moving Alarm:
+>>>"^MOBIT,ECAR,IMEI,W1,$\n"
+   "^MOBIT,ECAR,IMEI,Re,W1,$\n"
+
+upload GPS info automatically:
+>>>"^MOBIT,ECAR,IMEI,L1,30.102194,120.121010,0,$\n"
+>>>"^MOBIT,ECAR,IMEI,L1,F,F,0,$\n" // cannot get location info
+   "^MOBIT,ECAR,IMEI,Re,L1,$\n"
+
+IAP Success:
+>>>"^MOBIT,ECAR,IMEI,U1,SW-Ver,$\n"
+   NONE
+
+MP3 download success:
+>>>"^MOBIT,ECAR,IMEI,Re,U2,file-name,$\n"
+   NONE
+
+DEV Start Charge:
+>>>"^MOBIT,ECAR,IMEI,B1,60,15,$\n" // power is 60%, 15 is charget time
+   "^MOBIT,ECAR,IMEI,Re,B1,$\n"
+   
+DEV Stop Charge:
+>>>"^MOBIT,ECAR,IMEI,B3,60,15,$\n" // power is 60%, 15 is charget time
+   "^MOBIT,ECAR,IMEI,Re,B3,$\n"
+   
+----------------SVR Host----------------
+
+Query Params:
+>>>"^MOBIT,ECAR,IMEI,C0,$\n"
+   "^MOBIT,ECAR,IMEI,Re,C0,MAC,ICCID,$\n"
+
+Dev Shutdown
+>>>"^MOBIT,ECAR,IMEI,S0,$\n"
+   NONE
+	
+Query GPS:
+>>>"^MOBIT,ECAR,IMEI,L0,$\n"
+   "^MOBIT,ECAR,IMEI,Re,L0,30.102194,120.121010,0,$\n"
+   "^MOBIT,ECAR,IMEI,Re,L0,F,F,0,$\n" // cannot get location info
+
+
+IAP Request:
+>>>"^MOBIT,ECAR,IMEI,U0,http://xxx/xxx.bin,$\n"
+   "^MOBIT,ECAR,IMEI,Re,U0,$\n"
+   
+MP3 Update Request:
+>>>"^MOBIT,ECAR,IMEI,U2,file-name,http://xxx/xxx.mp3,file-md5,$\n"
+   NONE, later ACK
+   
+MP3 Play:
+>>>"^MOBIT,ECAR,IMEI,P0,file-name,$\n"
+   "^MOBIT,ECAR,IMEI,Re,P0,file-name,0,$\n" // Play Failed
+   "^MOBIT,ECAR,IMEI,Re,P0,file-name,1,$\n" // Play Success
+   
+Start Trace DEV:
+>>>"^MOBIT,ECAR,IMEI,T0,120,$\n"// 120 is time gap
+   "^MOBIT,ECAR,IMEI,Re,T0,$\n"
+   
+Stop Trace DEV:
+>>>"^MOBIT,ECAR,IMEI,T2,$\n"
+   "^MOBIT,ECAR,IMEI,Re,T2,$\n"
+   
+Query BMS Status:
+>>>"^MOBIT,ECAR,IMEI,B0,$\n"
+   "^MOBIT,ECAR,IMEI,Re,B0,60,15,23$\n" // power is 60%, 15 is charget time, 23 is temp
+   
+Query MP3:
+>>>"^MOBIT,ECAR,IMEI,P2,$\n"
+   "^MOBIT,ECAR,IMEI,Re,P2,file_1:md5_1|file_2:md5_2,0,$\n"

@@ -13,9 +13,18 @@ u8 UART5_RX_BUF_BAK[UART5_MAX_RECV_LEN];
 
 void uart5SendChar(u8 ch)
 {      
-		while((UART5->SR&0x40)==0);  
-    UART5->DR = (u8) ch;      
+		while((USART2->SR&0x40)==0);  
+    USART2->DR = (u8) ch;      
 }
+
+void UART5_SendData(u8 *str, u16 strlen)
+{ 
+	u16 k = 0;
+
+	do {
+		uart5SendChar(*(str + k)); k++;
+	} while (k < strlen);
+} 
 
 //通过判断接收连续2个字符之间的时间差不大于10ms来决定是不是一次连续的数据.
 //如果2个字符接收间隔超过10ms,则认为不是1次连续数据.也就是超过10ms没有接收到
@@ -25,13 +34,13 @@ void uart5SendChar(u8 ch)
 //[14:0]:接收到的数据长度
 vu16 UART5_RX_STA=0;   	 
 vu16 UART5_RX_STA_BAK=0;
-void UART5_IRQHandler(void)
+void USART2_IRQHandler(void)
 {
 	u8 res;	    
 	OSIntEnter();    
-	if(USART_GetFlagStatus(UART5, USART_FLAG_RXNE) != RESET)//接收到数据
+	if(USART_GetFlagStatus(USART2, USART_FLAG_RXNE) != RESET)//接收到数据
 	{	 
-		res=USART_ReceiveData(UART5);
+		res=USART_ReceiveData(USART2);
 		if((UART5_RX_STA&(1<<15))==0)//接收完的一批数据,还没有被处理,则不再接收其他数据
 		{ 
 			if(UART5_RX_STA<UART5_MAX_RECV_LEN)	//还可以接收数据
@@ -65,24 +74,24 @@ void usart5_init(u32 bound)
 	GPIO_InitTypeDef GPIO_InitStructure;
 	USART_InitTypeDef USART_InitStructure;
  
-	USART_DeInit(UART5);  //复位串口3
+	USART_DeInit(USART2);  //复位串口3
 	
-	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC|RCC_AHB1Periph_GPIOD,ENABLE); //使能GPIOB时钟
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_UART5,ENABLE);//使能UART5时钟
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA,ENABLE); //使能GPIOB时钟
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2,ENABLE);//使能UART5时钟
 	
  
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12; //GPIOB11和GPIOB10初始化
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2; //GPIOB11和GPIOB10初始化
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;//复用功能
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;	//速度50MHz
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP; //推挽复用输出
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP; //上拉
-	GPIO_Init(GPIOC,&GPIO_InitStructure); //初始化GPIOB11，和GPIOB10
+	GPIO_Init(GPIOA,&GPIO_InitStructure); //初始化GPIOB11，和GPIOB10
 	
-  	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
-	GPIO_Init(GPIOD,&GPIO_InitStructure);   
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
+	GPIO_Init(GPIOA,&GPIO_InitStructure);   
 	
-	GPIO_PinAFConfig(GPIOC,GPIO_PinSource12,GPIO_AF_UART5); //GPIOB11复用为UART5
-	GPIO_PinAFConfig(GPIOD,GPIO_PinSource2,GPIO_AF_UART5); //GPIOB10复用为UART5	  
+	GPIO_PinAFConfig(GPIOA,GPIO_PinSource2,GPIO_AF_USART2); //GPIOB11复用为UART5
+	GPIO_PinAFConfig(GPIOA,GPIO_PinSource3,GPIO_AF_USART2); //GPIOB10复用为UART5	  
 	
 	USART_InitStructure.USART_BaudRate = bound;//波特率一般设置为9600;
 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;//字长为8位数据格式
@@ -90,14 +99,14 @@ void usart5_init(u32 bound)
 	USART_InitStructure.USART_Parity = USART_Parity_No;//无奇偶校验位
 	USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;//无硬件数据流控制
 	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;	//收发模式
-	USART_Init(UART5, &USART_InitStructure); //初始化串口3
+	USART_Init(USART2, &USART_InitStructure); //初始化串口3
 	
-	USART_ITConfig(UART5, USART_IT_RXNE, ENABLE);//开启中断  
+	USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);//开启中断  
 		
-	USART_Cmd(UART5, ENABLE);                    //使能串口 
+	USART_Cmd(USART2, ENABLE);                    //使能串口 
 	
  
-	NVIC_InitStructure.NVIC_IRQChannel = UART5_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannel = USART2_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority=2 ;//抢占优先级2
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 3;		//子优先级3
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;			//IRQ通道使能
@@ -105,7 +114,7 @@ void usart5_init(u32 bound)
 	
 	TIM6_Int_Init(500-1,8400-1);	//10ms中断一次
 	
-  	TIM_Cmd(TIM6, DISABLE); //关闭定时器7
+  TIM_Cmd(TIM6, DISABLE); //关闭定时器7
 	
 	UART5_RX_STA=0;				//清零 
 }
@@ -122,8 +131,8 @@ void u5_printf(char* fmt,...)
 	i=strlen((const char*)UART5_TX_BUF);//此次发送数据的长度
 	for(j=0;j<i;j++)//循环发送数据
 	{
-		while(USART_GetFlagStatus(UART5,USART_FLAG_TC)==RESET);//循环发送,直到发送完毕   
-		USART_SendData(UART5,(uint8_t)UART5_TX_BUF[j]);   
+		while(USART_GetFlagStatus(USART2,USART_FLAG_TC)==RESET);//循环发送,直到发送完毕   
+		USART_SendData(USART2,(uint8_t)UART5_TX_BUF[j]);   
 	}
 }
 
