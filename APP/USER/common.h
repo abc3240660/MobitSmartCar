@@ -17,7 +17,7 @@
 #endif 
 
 
-// #define HC08_ENABLE 1
+#define HC08_ENABLE 1
 // #define MPU_ENABLE 1
 
 #define LEN_FILE_NAME   64

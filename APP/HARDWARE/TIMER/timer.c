@@ -9,8 +9,6 @@
 void write_logs(char *module, char *log, u16 size, u8 mode);
 void hc08_msg_process(u8 *data, u16 num);
 
-extern u8 g_mac_addr[32];
-
 void TIM2_Init(u16 auto_data,u16 fractional)
 {
         GPIO_InitTypeDef GPIO_InitStructure;

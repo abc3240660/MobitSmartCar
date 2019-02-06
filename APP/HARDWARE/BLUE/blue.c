@@ -10,6 +10,8 @@
 #include "common.h"
 #include <stdlib.h>
 
+extern u8 g_mac_addr[32];
+
 // Mobit Protocol:
 //           STX + LEN(1B) + RAND(1B) + KEY(1B) + CMD(1B) + DATA(LEN B) + 						CRC(1B)
 
@@ -100,11 +102,10 @@ void hc08_init(void)
 	// Reset value
 	g_key_once = 0;
 
-	// TBD: Add IO for Output
-#if 0// HW RST
-	PDout(0) = 0;
+#if 1// HW RST
+	HC08_BT_RST = 0;
 	delay_ms(200);
-	PDout(0) = 1;
+	HC08_BT_RST = 1;
 #endif
 	delay_ms(300);
 

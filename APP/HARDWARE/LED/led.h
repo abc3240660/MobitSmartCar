@@ -15,6 +15,7 @@
 ////////////////////////////////////////////////////////////////////////////////// 	
 
 //LED¶Ë¿Ú¶¨Òå
+#define HC08_BT_RST  PBout(7)
 #define SIM7000E_PWR PEout(2)
 #define SIM7000E_RST PEout(3)
 #define LED0 PEout(3)	 
