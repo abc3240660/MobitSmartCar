@@ -15,20 +15,14 @@
 ////////////////////////////////////////////////////////////////////////////////// 	
    	   		   
 //IO方向设置
-//#define SDA_IN()  {GPIOB->MODER&=~(3<<(9*2));GPIOB->MODER|=0<<9*2;}	//PB9输入模式
-//#define SDA_OUT() {GPIOB->MODER&=~(3<<(9*2));GPIOB->MODER|=1<<9*2;} //PB9输出模式
-
-#define SDA_IN()  {GPIOB->MODER&=~(3<<(11*2));GPIOB->MODER|=0<<11*2;}	//PB9输入模式
-#define SDA_OUT() {GPIOB->MODER&=~(3<<(11*2));GPIOB->MODER|=1<<11*2;} //PB9输出模式
+#define SDA_IN()  {GPIOF->MODER&=~(3<<(0*2));GPIOF->MODER|=0<<0*2;}	//PF0输入模式
+#define SDA_OUT() {GPIOF->MODER&=~(3<<(0*2));GPIOF->MODER|=1<<0*2;} //PF0输出模式
 
 
 //IO操作函数	 
-//#define IIC_SCL    PBout(8) //SCL
-//#define IIC_SDA    PBout(9) //SDA	 
-//#define READ_SDA   PBin(9)  //输入SDA 
-#define IIC_SCL    PBout(10) //SCL
-#define IIC_SDA    PBout(11) //SDA	 
-#define READ_SDA   PBin(11)  //输入SDA 
+#define IIC_SCL    PFout(1) //SCL
+#define IIC_SDA    PFout(0) //SDA	 
+#define READ_SDA   PFin(0)  //输入SDA 
 
 //IIC所有操作函数
 void IIC_Init(void);                //初始化IIC的IO口				 
