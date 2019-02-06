@@ -4,7 +4,7 @@
 #include "includes.h"
 
 // For VS1003 to Suport Double HW Board
-#define QMXX_STM32 1
+// #define QMXX_STM32 1
 
 // Ex SPI Flash
 #define ENV_SECTOR_INDEX	0

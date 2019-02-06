@@ -147,7 +147,7 @@ void do_vs_test()
 	delay_ms(1000);
 	xx = VS_Ram_Test();
 	delay_ms(1000);
-	music_play();
+	music_play("0:/MUSIC/sax.mp3");
 	
 	while(1)
 	{

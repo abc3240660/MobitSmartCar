@@ -23,10 +23,10 @@
 #define VS_XCS      PCout(13)  	//XCS  B12
 #define VS_XDCS     PCout(0)  	//XDCS  B10
 #else
-#define VS_DQ       PAin(2)  	//DREQ 
-#define VS_RST      PAout(3) 	//RST
+#define VS_DQ       PCin(5)  	//DREQ 
+#define VS_RST      PCout(4) 	//RST
 #define VS_XCS      PAout(4)  	//XCS
-#define VS_XDCS     PAout(5)  	//XDCS
+#define VS_XDCS     PBout(0)  	//XDCS
 #endif
 //////////////////////////////////////////////////////////////
 

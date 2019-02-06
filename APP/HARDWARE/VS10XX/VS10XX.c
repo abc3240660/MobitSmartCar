@@ -84,8 +84,8 @@ void VS_Init(void)
  // GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;                   //上拉
 	GPIO_Init(GPIOC, &GPIO_InitStructure);	
 	
-	 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
-		GPIO_Init(GPIOB, &GPIO_InitStructure);	
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);	
 	
 	SPI2_Init();	 
 }	  
@@ -94,36 +94,38 @@ void VS_Init(void)
 {
  	GPIO_InitTypeDef  GPIO_InitStructure;
  	
-	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA|RCC_AHB1Periph_GPIOB, ENABLE);	 //??PB????
-
- 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;				 //PA2 DREQ
- 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN; 		 //??
-//  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;//????
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;//100MHz
-//  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;//??
- 	GPIO_Init(GPIOA, &GPIO_InitStructure);
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA|RCC_AHB1Periph_GPIOB|RCC_AHB1Periph_GPIOC, ENABLE); //使能PB端口时钟
 	
-  // XCS XDCS
- 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4|GPIO_Pin_5;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;//??
-  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;//????
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
-//	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;//??
-	GPIO_Init(GPIOA, &GPIO_InitStructure);	
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5; //KEY0 KEY1 KEY2对应引脚
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;//普通输入模式
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;//100M
+ // GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;//上拉
+ 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
+ 	GPIO_Init(GPIOC, &GPIO_InitStructure);
 
-	// RST
- 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
+ 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;                  //普通输出模式
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;                 //推挽输出
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;             //100MHz
+ // GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;                   //上拉
+	GPIO_Init(GPIOC, &GPIO_InitStructure);	
+	
+ 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;                  //普通输出模式
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;                 //推挽输出
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;             //100MHz
+ // GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;                   //上拉
 	GPIO_Init(GPIOA, &GPIO_InitStructure);	
 	
-	 //GPIOB14
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;//PB0
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;//??
-  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;//????
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;//100MHz
-  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;//??
-  GPIO_Init(GPIOB, &GPIO_InitStructure);//???
-
-	GPIO_SetBits(GPIOB, GPIO_Pin_0);//???,???SPI Flash
+ 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;                  //普通输出模式
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;                 //推挽输出
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;             //100MHz
+ // GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;                   //上拉
+	GPIO_Init(GPIOB, &GPIO_InitStructure);	
+	
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);	
 	
 	SPI1_Init();
 }	
@@ -139,7 +141,7 @@ void VS_Soft_Reset(void)
 	retry=0;
 	while(VS_RD_Reg(SPI_MODE)!=0x0800)	// 软件复位,新模式  
 	{
-		VS_WR_Cmd(SPI_MODE,0x0804);		// 软件复位,新模式	    
+		VS_WR_Cmd(SPI_MODE,0x0805);		// 软件复位,新模式	    
 		delay_ms(2);//等待至少1.35ms 
 		if(retry++>100)break; 	    
 	}	 		 
@@ -176,7 +178,7 @@ void VS_Sine_Test(void)
 {											    
 	VS_HD_Reset();	 
 	VS_WR_Cmd(0x0b,0X2020);	  //设置音量	 
- 	VS_WR_Cmd(SPI_MODE,0x0820);//进入VS10XX的测试模式     
+ 	VS_WR_Cmd(SPI_MODE,0x0821);//进入VS10XX的测试模式     
 	while(VS_DQ==0);     //等待DREQ为高
 	//printf("mode sin:%x\n",VS_RD_Reg(SPI_MODE));
  	//向VS10XX发送正弦测试命令：0x53 0xef 0x6e n 0x00 0x00 0x00 0x00
@@ -237,7 +239,7 @@ u16 VS_Ram_Test(void)
 { 
 	u16 ret = 0;
 	VS_HD_Reset();     
- 	VS_WR_Cmd(SPI_MODE,0x0820);// 进入VS10XX的测试模式
+ 	VS_WR_Cmd(SPI_MODE,0x0821);// 进入VS10XX的测试模式
 	while (VS_DQ==0); // 等待DREQ为高			   
  	VS_SPI_SpeedLow();//低速 
 	VS_XDCS=0;	       		    // xDCS = 1，选择VS10XX的数据接口
