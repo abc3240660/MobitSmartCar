@@ -111,13 +111,12 @@ void do_sd_init()
 
 void mpu6050_init()
 {
-#if 0
+#if 1
 	MPU_Init();
 	delay_ms(200);
 	while(mpu_dmp_init())
 	{
 		delay_ms(200);
-		//usart1_send_char('K');
 	}
 	//mpu_dmp_init();
 #endif
@@ -188,11 +187,11 @@ void system_init(void)
 	my_mem_init(SRAMCCM);
 
 	TIM2_Init(9999,8399);
-	TIM4_Init(9999,8399);
+	TIM4_Init(9999,8399);                                                                
 
 	// VS_Init();
 
-	// mpu6050_init();
+	mpu6050_init();
 
 	// delay_ms(1500);
 
@@ -353,7 +352,7 @@ void usart1_report_imu(short aacx,short aacy,short aacz,short gyrox,short gyroy,
 	tbuf[23]=yaw&0XFF;
 	usart1_niming_report(0XAF,tbuf,28);//飞控显示帧,0XAF
 }
-
+int FCL_or_MFC=0;
 void MPU6050_Risk_Check()
 {
 	u8 ret = 0;
@@ -363,8 +362,6 @@ void MPU6050_Risk_Check()
 	short temp;					//温度
 
 	ret = mpu_dmp_get_data(&pitch,&roll,&yaw);
-	//usart1_send_char(ret);
-
 	if (ret == 0) {
 		temp=MPU_Get_Temperature();	//得到温度值
 		MPU_Get_Accelerometer(&aacx,&aacy,&aacz);	//得到加速度传感器数据
@@ -373,12 +370,18 @@ void MPU6050_Risk_Check()
 #if 0
 		usart1_report_imu(aacx,aacy,aacz,gyrox,gyroy,gyroz,(int)(roll*100),(int)(pitch*100),(int)(yaw*10));
 #else
-		//printf(" (int)(roll*100)=%d ,(int)(pitch*100)=%d ,(int)(yaw*10)=%d \r\n",(int)(roll*100),(int)(pitch*100),(int)(yaw*10));
-		if((pitch*100>4500)||(pitch*100<-4500)||(yaw*10>450)||(yaw*10<-450))
+		printf(" (int)(roll*100)=%d ,(int)(pitch*100)=%d ,(int)(yaw*10)=%d \r\n",(int)(roll*100),(int)(pitch*100),(int)(yaw*10));
+		if((roll*100>4500)||(roll*100<-4500)||(pitch*100>4500)||(pitch*100<-4500)||(yaw*10>450)||(yaw*10<-450))
+		{
+			FCL_or_MFC=1;
 			printf("FCL \r\n");
-		else
+		}else{
+			FCL_or_MFC=0;
 			printf("MFC \r\n");
+		}
 #endif
+	}else{
+		printf("Get mpu data failed! \r\n");
 	}
 }
 
@@ -463,7 +466,7 @@ void main_task(void *pdata)
 			// TBD
 			// sys_env_save();
 		}
-
+		MPU6050_Risk_Check();
 		OSTimeDlyHMSM(0,0,0,100);// 500ms
 	}
 }
@@ -529,6 +532,7 @@ void higher_task(void *pdata)
 	while (1) {
 		sim7500e_communication_loop(0,NULL,NULL);
         OSTimeDlyHMSM(0,0,0,500);// 500ms
+		
 	}
 }
 
