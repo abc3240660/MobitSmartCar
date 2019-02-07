@@ -293,6 +293,26 @@ void hc08_debug_process(u8 *data, u16 num)
 		W25QXX_Write((u8*)&iap_env, ENV_SECTOR_INDEX_IAP*W25Q_SECTOR_SIZE, sizeof(IAP_ENV));
 
 		SoftReset();
+	} else if (0 == strncmp((const char*)data, HC08_SET_BACKUP, strlen(HC08_SET_BACKUP))) {
+		IAP_ENV iap_env;
+
+		memset(&iap_env, 0, sizeof(iap_env));
+		W25QXX_Read((u8*)&iap_env, ENV_SECTOR_INDEX_IAP*W25Q_SECTOR_SIZE, sizeof(IAP_ENV));
+
+		iap_env.need_bak_flag = 0x51516821;// Trigger backup from RUN into BAKOK sector
+		W25QXX_Write((u8*)&iap_env, ENV_SECTOR_INDEX_IAP*W25Q_SECTOR_SIZE, sizeof(IAP_ENV));
+
+		SoftReset();
+	} else if (0 == strncmp((const char*)data, HC08_SET_RESTORE, strlen(HC08_SET_RESTORE))) {
+		IAP_ENV iap_env;
+
+		memset(&iap_env, 0, sizeof(iap_env));
+		W25QXX_Read((u8*)&iap_env, ENV_SECTOR_INDEX_IAP*W25Q_SECTOR_SIZE, sizeof(IAP_ENV));
+
+		iap_env.need_rcv_flag = 0x51656191;// Trigger restore from BAKOK into RUN sector
+		W25QXX_Write((u8*)&iap_env, ENV_SECTOR_INDEX_IAP*W25Q_SECTOR_SIZE, sizeof(IAP_ENV));
+
+		SoftReset();
 	} else if (0 == strncmp((const char*)data, HC08_SET_TIME, strlen(HC08_SET_TIME))) {
 		RTC_Sync_time(data+strlen(HC08_SET_TIME));
 	}

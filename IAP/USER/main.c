@@ -110,15 +110,27 @@ int main(void)
 			printf("backup run start\n");
 			do_backup_run();
 			printf("backup run end\n");
-			
+
 			iap_env.bak_sta_flag = 0x61828155;
 			iap_env.need_bak_flag = 0;
+		}
+
+		// restore from BAKOK sector into RUN sector
+		if (0x51656191 == iap_env.need_rcv_flag) {
+			printf("restore run start\n");
+			do_restore_run();
+			printf("restore run end\n");
+
+			iap_env.need_rcv_flag = 0;
 		}
 		
 		// after first APP run, APP will set this flag
 		// next boot, IAP will backup the first OK APP into BAKOK sector
 		if (0x12345678 == iap_env.bak_sta_flag) {
+			printf("restore run start\n");
 			do_backup_run();
+			printf("restore run end\n");
+
 			iap_env.bak_sta_flag = 0x61828155;
 		}
 		

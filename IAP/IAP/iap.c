@@ -98,7 +98,7 @@ int do_upddate_firm(u32 update_addr)
 	u8 buf[MAX_BUFF_SIZE] = "";
 	
     /* Opens an existing file. If not exist, creates a new file. */
-    fr = f_open(&fp, "TEST.bin", FA_READ | FA_OPEN_ALWAYS);
+	fr = f_open(&fp, "0:/IAP/APP.bin", FA_READ | FA_OPEN_ALWAYS);
     if (fr != FR_OK) {
 		return -1;
     }

@@ -22,6 +22,7 @@ void SoftReset(void);
 
 void sys_env_init(void)
 {
+	IAP_ENV iap_env;
 	SYS_ENV sys_env;
 	
 	memset(&sys_env, 0, sizeof(sys_env));
@@ -39,6 +40,17 @@ void sys_env_init(void)
 
 		W25QXX_Write((u8*)&sys_env, ENV_SECTOR_INDEX_ECAR*W25Q_SECTOR_SIZE, sizeof(SYS_ENV));
 	}
+
+	memset(&iap_env, 0, sizeof(iap_env));
+	W25QXX_Read((u8*)&iap_env, ENV_SECTOR_INDEX_IAP*W25Q_SECTOR_SIZE, sizeof(IAP_ENV));
+
+	// set initial value for the first boot
+	if ((iap_env.bak_sta_flag!=0x61828155) && (iap_env.bak_sta_flag!=0x12345678)) {
+		iap_env.bak_sta_flag = 0x12345678;
+	}
+
+	iap_env.try_run_cnt = 0;
+	W25QXX_Write((u8*)&iap_env, ENV_SECTOR_INDEX_IAP*W25Q_SECTOR_SIZE, sizeof(IAP_ENV));
 }
 
 void sys_env_dump(void)

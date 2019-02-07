@@ -175,6 +175,10 @@ void system_init(void)
  	LED_Init();
  	KEY_Init();
 	
+	printf("SmartMotor Starting...\n");
+	// printf("SmartMotor Starting VerSD...\n");
+	// printf("SmartMotor Starting VerSPI...\n");
+
 	SIM7000E_RST = 1;
 	delay_ms(1000);
 	
@@ -185,7 +189,6 @@ void system_init(void)
 	My_RTC_Init();
 	RTC_Set_WakeUp(RTC_WakeUpClock_CK_SPRE_16bits,0);
 
-	printf("SmartMotor Starting...\n");
 	CAN1_Mode_Init(CAN1_mode);// 250Kbps
 	CAN2_Mode_Init(CAN2_mode);// 500Kbps
 
@@ -271,7 +274,7 @@ void MPU6050_Risk_Check()
 			// printf("MFC \r\n");
 		}
 	} else {
-		printf("Get mpu data failed! \r\n");
+		// printf("Get mpu data failed! \r\n");
 	}
 }
 

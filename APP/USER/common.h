@@ -54,6 +54,10 @@ typedef struct {
 	// (IAP SET)0 -> 10 - if equal to 10, need do restore hex data from BAKOK sector into RUN sector
 	// (APP CLR)0 - jump to app ok
 	u32 try_run_cnt;
+
+	// (APP SET)0x51656191 - need restore hex data from BAKOK sector into RUN sector
+	// (IAP CLR)0x00000000 - idle
+	u32 need_rcv_flag;
 } IAP_ENV;
 
 void sys_env_init(void);
