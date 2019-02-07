@@ -96,7 +96,7 @@ void SPI2_Init(void)
  	GPIO_InitTypeDef GPIO_InitStructure;
   SPI_InitTypeDef  SPI_InitStructure;
 
-	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB|RCC_AHB1Periph_GPIOC, ENABLE);           //使能GPIOB时钟
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);           //使能GPIOB时钟
   RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI2, ENABLE);            //使能SPI2时钟
 	
   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13; 	
@@ -106,14 +106,14 @@ void SPI2_Init(void)
   GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;                    //上拉
   GPIO_Init(GPIOB, &GPIO_InitStructure);                          //初始化IO口
 	
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2|GPIO_Pin_3; 
-	GPIO_Init(GPIOC, &GPIO_InitStructure); 
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_14|GPIO_Pin_15; 
+	GPIO_Init(GPIOB, &GPIO_InitStructure); 
 	
 	GPIO_PinAFConfig(GPIOB,GPIO_PinSource13,GPIO_AF_SPI2);           //PB3复用为 SPI1
-	GPIO_PinAFConfig(GPIOC,GPIO_PinSource2,GPIO_AF_SPI2);           //PB4复用为 SPI1
-	GPIO_PinAFConfig(GPIOC,GPIO_PinSource3,GPIO_AF_SPI2);           //PB5复用为 SPI1
+	GPIO_PinAFConfig(GPIOB,GPIO_PinSource14,GPIO_AF_SPI2);           //PB4复用为 SPI1
+	GPIO_PinAFConfig(GPIOB,GPIO_PinSource15,GPIO_AF_SPI2);           //PB5复用为 SPI1
  	GPIO_SetBits(GPIOB,GPIO_Pin_13);  //PB13/14/15上拉
-	GPIO_SetBits(GPIOC,GPIO_Pin_2|GPIO_Pin_3);  //PB13/14/15上拉
+	GPIO_SetBits(GPIOB,GPIO_Pin_14|GPIO_Pin_15);  //PB13/14/15上拉
 
 	SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;  //设置SPI单向或者双向的数据模式:SPI设置为双线双向全双工
 	SPI_InitStructure.SPI_Mode = SPI_Mode_Master;		//设置SPI工作模式:设置为主SPI
@@ -129,7 +129,6 @@ void SPI2_Init(void)
 	SPI_Cmd(SPI2, ENABLE); //使能SPI外设
 	
 	SPI2_ReadWriteByte(0xff);//启动传输	 
-
 }   
 //SPI 速度设置函数
 //SpeedSet:
@@ -161,7 +160,7 @@ u8 SPI2_ReadWriteByte(u8 TxData)
 	SPI_I2S_SendData(SPI2, TxData); //通过外设SPIx发送一个数据
 	retry=0;
 
-	while (SPI_I2S_GetFlagStatus(SPI2, SPI_I2S_FLAG_RXNE) == RESET){} //检查指定的SPI标志位设置与否:接受缓存非空标志位
+	while (SPI_I2S_GetFlagStatus(SPI2, SPI_I2S_FLAG_RXNE) == RESET) //检查指定的SPI标志位设置与否:接受缓存非空标志位
 		{
 		retry++;
 		if(retry>200)return 0;

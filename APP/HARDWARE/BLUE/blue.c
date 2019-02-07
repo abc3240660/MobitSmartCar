@@ -10,7 +10,21 @@
 #include "common.h"
 #include <stdlib.h>
 
+#define HC08_SET_APN "SET APN="
+#define HC08_SET_IP "SET IP="
+#define HC08_SET_PORT "SET PORT="
+#define HC08_SET_IAP "SET IAP"// Trigger IAP from SD
+#define HC08_SET_BACKUP "SET BACKUP"// Trigger backup from RUN into BAKOK sector
+#define HC08_SET_RESTORE "SET RESTORE"// Trigger restore from BAKOK into RUN sector
+#define HC08_SET_TIME "SET TIME="
+
 extern u8 g_mac_addr[32];
+extern u8 g_svr_ip[32];
+extern u8 g_svr_apn[32];
+extern u8 g_svr_port[8];
+extern vu16 UART6_RX_STA;
+
+void SoftReset(void);
 
 // Mobit Protocol:
 //           STX + LEN(1B) + RAND(1B) + KEY(1B) + CMD(1B) + DATA(LEN B) + 						CRC(1B)
@@ -47,27 +61,9 @@ const char CRC8Table[]={
 	116, 42, 200, 150, 21, 75, 169, 247, 182, 232, 10, 84, 215, 137, 107, 53
 };
 
-
-extern u8 g_svr_ip[32];
-extern u8 g_svr_apn[32];
-extern u8 g_svr_port[8];
-
-extern vu16 UART6_RX_STA;
-
-void SoftReset(void);
-
 u8 rand_fake()
 {
 	return 0x55;
-}
-
-void hc08_query_sta(void)
-{
-	// TBD: Add IO for Input
-//	if (0 == KEY_HC08_STA) {// IDLE
-//		g_key_once = 0;
-//	} else {// Connected
-//	}
 }
 
 u8 hc08_parse_atacks(u8 times, u8* out_buf)
@@ -97,30 +93,27 @@ u8 hc08_parse_atacks(u8 times, u8* out_buf)
 	return ret;
 }
 
-void hc08_init(void)
+void hc08_reset(void)
 {
-	// Reset value
-	g_key_once = 0;
-
-#if 1// HW RST
 	HC08_BT_RST = 0;
 	delay_ms(200);
 	HC08_BT_RST = 1;
-#endif
 	delay_ms(300);
+	
+	// Reset value
+	g_key_once = 0;
+}
 
-#ifdef HC08_ENABLE
-#if 1
+void hc08_init(void)
+{
+	hc08_reset();
+	
 	UART6_SendData("AT+NAME=Mobit", sizeof("AT+NAME=Mobit"));
 	if (hc08_parse_atacks(5, NULL)) return;
 	delay_ms(200);
 	UART6_SendData("AT+ADDR=?", sizeof("AT+ADDR=?"));
 	if (hc08_parse_atacks(5, g_mac_addr)) return;
 	delay_ms(200);
-#else
-	UART6_SendData("AT+NAMEMobit\r\n", sizeof("AT+NAMEMobit\r\n"));
-#endif
-#endif
 }
 
 u8 crc8_calc(u8 *data, u8 len)
@@ -165,7 +158,7 @@ void get_svr_info(u8 *data, u8 len)
 	printf("g_svr_apn = %s\n", g_svr_apn);
 
 	// save into flash
-	// sys_env_save();
+	// sys_env_init();
 }
 
 void rand_encode(u8 *data, u8 rand, u8 len)
@@ -203,6 +196,9 @@ void auto_err_report(u8 err_mode)
 	rand_encode(snd_buf+4, rand_val, snd_buf[2]+2);
 
 	UART6_SendData(snd_buf, 8);
+	
+	// disconnect
+	hc08_reset();
 }
 
 void ack_other_actions(u8 cmd, u8 is_action_ok)
@@ -264,26 +260,48 @@ void ack_get_key(u8 is_pw_ok)
 	UART6_SendData(snd_buf, 9);
 }
 
+void hc08_debug_process(u8 *data, u16 num)
+{
+	if (0 == strncmp((const char*)data, HC08_SET_IP, strlen(HC08_SET_IP))) {
+		memset(g_svr_ip, 0, 32);
+		strncpy((char*)g_svr_ip, (const char*)(data+strlen(HC08_SET_IP)), 32);
+	} else if (0 == strncmp((const char*)data, HC08_SET_PORT, strlen(HC08_SET_PORT))) {
+		memset(g_svr_port, 0, 8);
+		strncpy((char*)g_svr_port, (const char*)(data+strlen(HC08_SET_PORT)), 8);
+	} else if (0 == strncmp((const char*)data, HC08_SET_APN, strlen(HC08_SET_APN))) {
+		SYS_ENV sys_env;
+		
+		memset(g_svr_apn, 0, 32);
+		strncpy((char*)g_svr_apn, (const char*)(data+strlen(HC08_SET_APN)), 32);
+
+		memset(&sys_env, 0, sizeof(sys_env));
+		W25QXX_Read((u8*)&sys_env, ENV_SECTOR_INDEX_ECAR*W25Q_SECTOR_SIZE, sizeof(SYS_ENV));
+
+		strncpy((char*)sys_env.svr_ip, (const char*)g_svr_ip, 32);
+		strncpy((char*)sys_env.svr_port, (const char*)g_svr_port, 8);
+		strncpy((char*)sys_env.svr_apn, (const char*)g_svr_apn, 32);
+		W25QXX_Write((u8*)&sys_env, ENV_SECTOR_INDEX_ECAR*W25Q_SECTOR_SIZE, sizeof(SYS_ENV));
+		
+		SoftReset();
+	} else if (0 == strncmp((const char*)data, HC08_SET_IAP, strlen(HC08_SET_IAP))) {
+		IAP_ENV iap_env;
+		
+		memset(&iap_env, 0, sizeof(iap_env));
+		W25QXX_Read((u8*)&iap_env, ENV_SECTOR_INDEX_IAP*W25Q_SECTOR_SIZE, sizeof(IAP_ENV));
+
+		iap_env.need_iap_flag = 0x1A1A2B2B;// Trigger IAP from SD
+		W25QXX_Write((u8*)&iap_env, ENV_SECTOR_INDEX_IAP*W25Q_SECTOR_SIZE, sizeof(IAP_ENV));
+
+		SoftReset();
+	} else if (0 == strncmp((const char*)data, HC08_SET_TIME, strlen(HC08_SET_TIME))) {
+		RTC_Sync_time(data+strlen(HC08_SET_TIME));
+	}
+}
+
 void hc08_msg_process(u8 *data, u16 num)
 {
-	u8 i = 0;
 	u8 key = 0;
 	u8 rand_val = 0;
-
-#if 0
-	printf("HC08 User MSGs:");
-	for (i=0; i<(UART6_RX_STA&0X7FFF); i++) {
-		printf("%.2X ", UART6_RX_BUF[i]);
-	}
-	printf("\n");
-#endif
-
-    // Hook for IAP
-	if ((0x55 == data[0]) || (0xAA == data[1])) {
-        // TBD: Update Flash Flag
-        SoftReset();
-        return;
-    }
 
 	// Check Header
 	if ((data[0] != 0xA3) || (data[1] != 0xA4)) {
@@ -297,13 +315,11 @@ void hc08_msg_process(u8 *data, u16 num)
 		return;
 	}
 
-#if 0// TBD: wait to implement
 	// Check Crc
 	if (data[num-1] != crc8_calc(data, num-1)) {
 		auto_err_report(1);
 		return;
 	}
-#endif
 	
 	memset(snd_buf, 0, 128);
 

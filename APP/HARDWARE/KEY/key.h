@@ -19,7 +19,7 @@
 #define KEY1 		PFin(8)		
 #define KEY2 		PFin(7)		
 #define WK_UP		PFin(6)		
-#define KEY_HAND_BRAKE	PFin(7)		
+#define KEY_HAND_BRAKE	PDin(14)		
 
 #define KEY0_PRES 	1
 #define KEY1_PRES		2

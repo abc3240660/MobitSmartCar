@@ -152,7 +152,7 @@ u8 SPI2_ReadWriteByte(u8 TxData)
 	SPI_I2S_SendData(SPI2, TxData); //通过外设SPIx发送一个数据
 	retry=0;
 
-	while (SPI_I2S_GetFlagStatus(SPI2, SPI_I2S_FLAG_RXNE) == RESET); //检查指定的SPI标志位设置与否:接受缓存非空标志位
+	while (SPI_I2S_GetFlagStatus(SPI2, SPI_I2S_FLAG_RXNE) == RESET) //检查指定的SPI标志位设置与否:接受缓存非空标志位
 		{
 		retry++;
 		if(retry>200)return 0;

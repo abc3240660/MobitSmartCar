@@ -31,8 +31,22 @@
 
 extern u16 W25QXX_TYPE;					//定义W25QXX芯片型号		   
 
-#define	W25QXX_CS 			PGout(8)  	//W25QXX的片选信号
+#define	W25QXX_CS 			PBout(12)  	//W25QXX的片选信号
 #define W25QXX_USE_MALLOC	1			//定义是否使用动态内存管理
+
+// 1*W25Q128 = 256 Block
+// 1*Block   = 16*Sector
+// 1*Sector  = 4KB
+// ---> 1*W25Q128 = 16MB
+
+// Block 0 Sector 0
+#define ENV_SECTOR_INDEX_ECAR	0
+// Block 0 Sector 1
+#define ENV_SECTOR_INDEX_IAP	1
+// Block 1 Sector 0
+#define BIN_SECTOR_INDEX_IAP	16
+
+#define W25Q_SECTOR_SIZE	4096
 
 ////////////////////////////////////////////////////////////////////////////////// 
 //指令表
@@ -67,20 +81,5 @@ void W25QXX_Erase_Sector(u32 Dst_Addr);	//扇区擦除
 void W25QXX_Wait_Busy(void);           	//等待空闲
 void W25QXX_PowerDown(void);        	//进入掉电模式
 void W25QXX_WAKEUP(void);				//唤醒
+
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

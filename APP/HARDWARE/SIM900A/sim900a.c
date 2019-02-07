@@ -38,12 +38,11 @@ u32 g_dw_size_total = 0;
 // BIT0: 0-Start, 1-Stop
 u8 g_bms_charge_sta_chged = 0;
 
-// TBD: To Check GPS or MPU6050
 u8 g_invaid_move = 0;
 
 u8 g_calypso_active = 0;
 
-u8 g_mac_addr[32]  = "";
+u8 g_mac_addr[32]  = "112233445566";
 u8 g_rssi_sim[32]  = "";
 u8 g_iccid_sim[32] = "";
 
@@ -351,6 +350,18 @@ u8 sim7500e_gps_check(void)
 	return 1;// OK
 }
 
+// TBD: To Check GPS or MPU6050
+u8 sim7500e_invalid_move_check(void)
+{
+	if (1) {
+		g_invaid_move = 0;
+	} else {
+		g_invaid_move = 1;
+	}
+	
+	return 0;// OK
+}
+
 u8* sim7500e_check_cmd(u8 *str, u8 index)
 {
 	char *strx = 0;
@@ -559,11 +570,10 @@ void sim7500e_do_query_car_ack()
 {
 	u8 car_status[12] = "";
 
-	// TBD: Add IO for Input
 	if (0 == KEY_HAND_BRAKE) {
-		g_car_sta &= ~(1<<BIT_HAND_BRAKE);
+		g_car_sta &= ~(1<<BIT_HAND_BRAKE);// IDLE
 	} else {
-		g_car_sta |= (1<<BIT_HAND_BRAKE);
+		g_car_sta |= (1<<BIT_HAND_BRAKE);// Active
 	}
 
 	car_status[0] = (g_car_sta&BIT_HAND_BRAKE)?'1':'0';
@@ -1003,6 +1013,7 @@ u8 sim7500e_setup_connect(void)
 u8 sim7500e_setup_initial(void)
 {
 	u8 i = 0;
+
 	for (i=0; i<5; i++) {
 		if (0 == sim7500e_send_cmd("AT","OK",20))break;
 		if (4 == i) return 1;
@@ -1230,8 +1241,7 @@ void sim7500e_http_iap()
 			if (g_dw_recved_sum == g_dw_size_total) {
 				g_iap_update = 0;
 				sim7500e_do_iap_upgrade_ack();
-                // TBD: Update Flash Flag
-                SoftReset();
+        env_update_iap_req(0x1A1A2B2B);
 			}
 		}
 	}
@@ -1279,6 +1289,10 @@ void sim7500e_idle_actions(void)
 	if (g_iap_update) {
         sim7500e_http_iap();
 	}
+	
+#if 0
+	sim7500e_invalid_move_check();
+#endif
 }
 
 void sim7500e_mobit_process(u8 index)

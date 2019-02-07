@@ -1,9 +1,6 @@
 #ifndef __COMMON_H
 #define __COMMON_H 	
 #include "sys.h"
-#include "includes.h"
-#include "w25qxx.h" 
-#include "ff.h" 
 
 #ifndef TRUE
 #define TRUE    1
@@ -57,13 +54,7 @@ typedef struct {
 } IAP_ENV;
 
 void sys_env_init(void);
-void sys_env_init(void);
+void sys_env_save(void);
 void sys_env_dump(void);
-void sys_env_update_meter(u32 value);
-void env_update_iap_req(u32 value);
-FRESULT scan_files(char *path);
-void create_directories(void);
-void create_logfile(void);
-void write_logs(char *module, char *log, u16 size, u8 mode);
-
+	
 #endif

@@ -183,7 +183,6 @@ u8 CAN1_Receive_Msg(u8 *buf)
 	// Byte3:Speed HB(rpm/bit)
 	// Byte6:TripMeter LB(0.1km/bit)
 	// Byte7:TripMeter HB(0.1km/bit)
-	// TBD: TotalMeter need to calc
 	} else if (0x10F8109A == RxMessage.ExtId) {// MC3624
 		// Get N/D/R
 		g_car_sta &= 0xFF;

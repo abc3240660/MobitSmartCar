@@ -8,6 +8,7 @@
 
 void write_logs(char *module, char *log, u16 size, u8 mode);
 void hc08_msg_process(u8 *data, u16 num);
+void hc08_debug_process(u8 *data, u16 num);
 
 void TIM2_Init(u16 auto_data,u16 fractional)
 {
@@ -147,6 +148,9 @@ void TIM3_IRQHandler(void)
 			// AT ACKs
 			if ((0xA3==UART6_RX_BUF[0]) && (0xA4==UART6_RX_BUF[1])) {
 				hc08_msg_process(UART6_RX_BUF, UART6_RX_STA&0X7FFF);
+				UART6_RX_STA = 0;
+			} else if (('S'==UART6_RX_BUF[0]) && ('E'==UART6_RX_BUF[1]) && ('T'==UART6_RX_BUF[2])) {
+				hc08_debug_process(UART6_RX_BUF, UART6_RX_STA&0X7FFF);
 				UART6_RX_STA = 0;
 			} else {// User MSGs
 				printf("HC08 AT ACK: %s\n", UART6_RX_BUF);

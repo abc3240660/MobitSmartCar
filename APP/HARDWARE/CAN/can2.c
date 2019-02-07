@@ -149,7 +149,7 @@ u8 CAN2_Receive_Msg(u8 *buf)
 				if (0 == g_bms_charge_sta_chged) {
 					g_bms_charge_sta_chged = 1;
 					g_bms_charged_times++;
-					sys_env_save();
+					sys_env_init();
 				}
 			} else {
 				if (1 == g_bms_charge_sta_chged) {
