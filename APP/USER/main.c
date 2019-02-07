@@ -176,7 +176,7 @@ void system_init(void)
  	KEY_Init();
 	
 	printf("SmartMotor Starting...\n");
-	// printf("SmartMotor Starting VerSD...\n");
+	// printf("SmartMotor Starting VerSD-TF-Card...\n");
 	// printf("SmartMotor Starting VerSPI...\n");
 
 	SIM7000E_RST = 1;

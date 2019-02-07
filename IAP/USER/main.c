@@ -149,7 +149,9 @@ int main(void)
 		// if try jump app failed more than 10 times
 		// restore BAKOK into RUN
 		if (10 == try_cnt++) {
+			printf("restore run start\n");
 			do_restore_run();
+			printf("restore run end\n");
 		}
 		
 		delay_ms(1000);

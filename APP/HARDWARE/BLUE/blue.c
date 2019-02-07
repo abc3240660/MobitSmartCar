@@ -13,7 +13,8 @@
 #define HC08_SET_APN "SET APN="
 #define HC08_SET_IP "SET IP="
 #define HC08_SET_PORT "SET PORT="
-#define HC08_SET_IAP "SET IAP"// Trigger IAP from SD
+#define HC08_SET_SD_IAP "SET SD IAP"// Trigger IAP from SD
+#define HC08_SET_SPI_IAP "SET SPI IAP"// Trigger IAP from SPI Flash
 #define HC08_SET_BACKUP "SET BACKUP"// Trigger backup from RUN into BAKOK sector
 #define HC08_SET_RESTORE "SET RESTORE"// Trigger restore from BAKOK into RUN sector
 #define HC08_SET_TIME "SET TIME="
@@ -283,7 +284,7 @@ void hc08_debug_process(u8 *data, u16 num)
 		W25QXX_Write((u8*)&sys_env, ENV_SECTOR_INDEX_ECAR*W25Q_SECTOR_SIZE, sizeof(SYS_ENV));
 		
 		SoftReset();
-	} else if (0 == strncmp((const char*)data, HC08_SET_IAP, strlen(HC08_SET_IAP))) {
+	} else if (0 == strncmp((const char*)data, HC08_SET_SD_IAP, strlen(HC08_SET_SD_IAP))) {
 		IAP_ENV iap_env;
 		
 		memset(&iap_env, 0, sizeof(iap_env));
@@ -291,6 +292,19 @@ void hc08_debug_process(u8 *data, u16 num)
 
 		iap_env.need_iap_flag = 0x1A1A2B2B;// Trigger IAP from SD
 		W25QXX_Write((u8*)&iap_env, ENV_SECTOR_INDEX_IAP*W25Q_SECTOR_SIZE, sizeof(IAP_ENV));
+
+		SoftReset();
+	} else if (0 == strncmp((const char*)data, HC08_SET_SPI_IAP, strlen(HC08_SET_SPI_IAP))) {
+		u32 i = 0;
+		IAP_ENV iap_env;
+
+		memset(&iap_env, 0, sizeof(iap_env));
+		W25QXX_Read((u8*)&iap_env, ENV_SECTOR_INDEX_IAP*W25Q_SECTOR_SIZE, sizeof(IAP_ENV));
+
+		iap_env.need_iap_flag = 0x5A5A6B6B;// Trigger IAP from SPI
+		W25QXX_Write((u8*)&iap_env, ENV_SECTOR_INDEX_IAP*W25Q_SECTOR_SIZE, sizeof(IAP_ENV));
+
+		write_bin_sd2spi();
 
 		SoftReset();
 	} else if (0 == strncmp((const char*)data, HC08_SET_BACKUP, strlen(HC08_SET_BACKUP))) {

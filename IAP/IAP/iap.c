@@ -99,14 +99,14 @@ int do_upddate_firm(u32 update_addr)
 	
     /* Opens an existing file. If not exist, creates a new file. */
 	fr = f_open(&fp, "0:/IAP/APP.bin", FA_READ | FA_OPEN_ALWAYS);
-    if (fr != FR_OK) {
+  if (fr != FR_OK) {
 		return -1;
-    }
-	printf("file_size=0x%x ",file_size);
+  }
+	printf("file_size=0x%x \n",file_size);
 	file_size = fp.fsize;
-	printf("file_size=0x%x ",file_size);
+	printf("file_size=0x%x \n",file_size);
 	do{
-		printf("file_size=0x%x ",file_size);
+		printf("file_size=0x%x \n",file_size);
 		if(file_size > MAX_BUFF_SIZE)
 			once = MAX_BUFF_SIZE;
 		else
@@ -169,9 +169,9 @@ int do_upddate_firm_spi(void)
 	u32 i = 0;
 	
 	for (i=0; i<(FLASH_RUN_SIZE/W25Q_SECTOR_SIZE); i++) {
-			memset(g_flash_buf, 0x55, W25Q_SECTOR_SIZE);
-			W25QXX_Write(g_flash_buf, (BIN_SECTOR_INDEX_IAP+i)*W25Q_SECTOR_SIZE, W25Q_SECTOR_SIZE);	
-			delay_ms(10);
+			//memset(g_flash_buf, 0x55, W25Q_SECTOR_SIZE);
+			//W25QXX_Write(g_flash_buf, (BIN_SECTOR_INDEX_IAP+i)*W25Q_SECTOR_SIZE, W25Q_SECTOR_SIZE);	
+			//delay_ms(10);
 			memset(g_flash_buf, 0x00, W25Q_SECTOR_SIZE);
 			W25QXX_Read(g_flash_buf, (BIN_SECTOR_INDEX_IAP+i)*W25Q_SECTOR_SIZE, W25Q_SECTOR_SIZE);
 			delay_ms(10);

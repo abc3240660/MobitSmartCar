@@ -69,5 +69,6 @@ FRESULT scan_files(char *path);
 void create_directories(void);
 void create_logfile(void);
 void write_logs(char *module, char *log, u16 size, u8 mode);
+int write_bin_sd2spi(void);
 
 #endif

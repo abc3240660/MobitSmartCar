@@ -20,6 +20,8 @@ extern OS_EVENT* sem_beep;
 
 void SoftReset(void);
 
+u8 w25q_buf[W25Q_SECTOR_SIZE] = {0};
+
 void sys_env_init(void)
 {
 	IAP_ENV iap_env;
@@ -239,4 +241,47 @@ void write_logs(char *module, char *log, u16 size, u8 mode)
 		}
 		OSSemPost(sem_beep);
 	}
+}
+
+int write_bin_sd2spi(void)
+{
+	u8 i = 0;
+	FRESULT fr;
+	FATFS fs;
+	FIL fp;
+	u32 br = 0;
+	u32 once = 0;
+	u32 file_size = 0;
+
+	/* Opens an existing file. If not exist, creates a new file. */
+	fr = f_open(&fp, "0:/IAP/TEST_SPI.bin", FA_READ | FA_OPEN_ALWAYS);
+	if (fr != FR_OK) {
+		return -1;
+	}
+	printf("file_size=0x%x \n",file_size);
+	file_size = fp.fsize;
+	printf("file_size=0x%x \n",file_size);
+	do {
+		printf("file_size=0x%x \n",file_size);
+		if (file_size > W25Q_SECTOR_SIZE) {
+			once = W25Q_SECTOR_SIZE;
+		} else {
+			once = file_size;
+		}
+		memset(w25q_buf, 0, W25Q_SECTOR_SIZE);
+		fr = f_read (&fp, w25q_buf,	once, &br);
+		if (once != br) {
+			printf("Read file failed ! \r\n");
+			break;
+		} else {
+			W25QXX_Write((u8*)w25q_buf, (BIN_SECTOR_INDEX_IAP+i)*W25Q_SECTOR_SIZE, once);
+			file_size -= once;
+			i++;
+		}
+
+	} while(file_size>0);
+
+  f_close(&fp);
+
+	return 0;
 }
