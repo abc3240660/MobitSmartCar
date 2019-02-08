@@ -18,6 +18,9 @@ extern u8 g_logmsg[LEN_LOG_MSG];
 
 extern OS_EVENT* sem_beep;
 
+extern u32 g_need_iap_flag;
+extern u32 g_iap_sta_flag;
+
 void SoftReset(void);
 
 u8 w25q_buf[W25Q_SECTOR_SIZE] = {0};
@@ -46,7 +49,14 @@ void sys_env_init(void)
 	memset(&iap_env, 0, sizeof(iap_env));
 	W25QXX_Read((u8*)&iap_env, ENV_SECTOR_INDEX_IAP*W25Q_SECTOR_SIZE, sizeof(IAP_ENV));
 
-	// set initial value for the first boot
+	g_need_iap_flag = iap_env.need_iap_flag;
+	g_iap_sta_flag = iap_env.iap_sta_flag;
+
+	// set to idle value
+	iap_env.need_iap_flag = 0;
+	iap_env.iap_sta_flag = 0;
+
+	// set to initial value for the first boot
 	if ((iap_env.bak_sta_flag!=0x61828155) && (iap_env.bak_sta_flag!=0x12345678)) {
 		iap_env.bak_sta_flag = 0x12345678;
 	}

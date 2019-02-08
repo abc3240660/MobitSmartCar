@@ -67,6 +67,9 @@ u8 g_svr_ip[32]  = "47.104.83.177";
 u8 g_svr_port[8] = "88";
 u8 g_svr_apn[32] = "CMNET";
 
+u32 g_need_iap_flag = 0;
+u32 g_iap_sta_flag = 0;
+
 u8 USART1_RX_BUF_BAK[U1_RECV_LEN_ONE];
 u8 USART1_RX_BUF_BAK_MOBIT[U1_RECV_LEN_ONE];
 
@@ -959,7 +962,6 @@ void sim7500e_parse_msg(char* msg)
 u8 sim7500e_setup_connect(void)
 {
 	u8 i = 0;
-	u8 iap_success = 0;
 	
 	sim7500dev.tcp_status=0;// IDLE
 	
@@ -1000,8 +1002,10 @@ u8 sim7500e_setup_connect(void)
 		if (sim7500e_do_dev_register_auto()) return 1;
 		delay_ms(10);
 
-		if (iap_success) {
-			sim7500e_do_iap_success_report();
+		if (0x3C3C4D4D == g_need_iap_flag) {
+			if (0 == g_iap_sta_flag) {
+				sim7500e_do_iap_success_report();
+			}
 		}
 
 		return 0;
