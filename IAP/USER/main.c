@@ -73,6 +73,10 @@ int main(void)
 			do_restore_run();
 		}
 		
+		if (g_periph_sta&(1<<BIT_SDTF_STA)) {
+			do_upddate_firm_sos(FLASH_RUN_ADDR);
+		}
+
 		// recved new BIN in SD/TF, do upgrade
 		if (0x1A1A2B2B == iap_env.need_iap_flag) {
 			if (g_periph_sta&(1<<BIT_SDTF_STA)) {

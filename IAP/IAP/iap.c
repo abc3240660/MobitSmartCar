@@ -128,6 +128,49 @@ int do_upddate_firm(u32 update_addr)
 	return 0;
 }
 
+int do_upddate_firm_sos(u32 update_addr)
+{
+	FRESULT fr;
+  FATFS fs;
+  FIL fp;
+	u32 br = 0;
+	u32 once = 0;
+	u32 file_size = 0;
+	u8 buf[MAX_BUFF_SIZE] = "";
+	
+  /* Opens an existing file. If not exist, creates a new file. */
+	fr = f_open(&fp, "0:/IAP/SOS.bin", FA_READ | FA_OPEN_ALWAYS);
+  if (fr != FR_OK) {
+		return -1;
+  }
+	printf("file_size=0x%x \n",file_size);
+	file_size = fp.fsize;
+	printf("file_size=0x%x \n",file_size);
+	do{
+		printf("file_size=0x%x \n",file_size);
+		if(file_size > MAX_BUFF_SIZE)
+			once = MAX_BUFF_SIZE;
+		else
+			once = file_size;
+		fr = f_read (&fp, buf,	once, &br);
+		if(once != br)
+		{
+			printf("Read file failed ! \r\n");
+			break;
+		}else{
+			iap_write_appbin(update_addr + (fp.fsize - file_size), buf, once);
+			file_size -= once;
+		}
+		
+	}while(file_size>0);
+
+  f_close(&fp);
+
+	f_unlink("0:/IAP/SOS.bin");
+
+	return 0;
+}
+
 int do_backup_run(void)
 {
 	u32 i = 0;

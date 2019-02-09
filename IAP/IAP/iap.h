@@ -51,6 +51,7 @@ int do_upddate_firm(u32 update_addr);
 int do_backup_run(void);
 int do_restore_run(void);
 int do_upddate_firm_spi(void);
+int do_upddate_firm_sos(u32 update_addr);
 
 #define BOOT_TRY_MAX_TIMES	10
 
