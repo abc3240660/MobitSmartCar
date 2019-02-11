@@ -103,6 +103,8 @@ void do_sd_check()
 
 void do_sd_init()
 {
+	u8 sw_ver[64] = "";
+	
 	exfuns_init();// alloc for fats
 
 	// This func will call SD_Init internally
@@ -111,6 +113,10 @@ void do_sd_init()
 	do_sd_check();
 
 	create_logfile();
+	
+	sprintf((char*)sw_ver, "SW_VER = %s", SW_VERSION);
+	
+	write_logs("SIM7000E", (char*)sw_ver, strlen((char*)sw_ver), 2);
 }
 
 void mpu6050_init()
