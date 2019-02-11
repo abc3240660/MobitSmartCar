@@ -7,7 +7,7 @@ extern u8 g_svr_ip[32];
 extern u8 g_svr_port[8];
 extern u8 g_svr_apn[32];
 
-extern u8 mp3_list[128];
+extern u8 g_mp3_list[512];
 
 extern u32 g_total_meters;
 
@@ -82,8 +82,14 @@ void sys_env_dump(void)
 	memcpy(g_svr_port, sys_env.svr_port, 8);
 	memcpy(g_svr_apn, sys_env.svr_apn, 32);
 	printf("svr_ip = %s\n", sys_env.svr_ip);
+	write_logs("SIM7000E", (char*)"svr_ip = ", strlen((char*)"svr_ip = "), 2);
+	write_logs("SIM7000E", (char*)sys_env.svr_ip, strlen((char*)sys_env.svr_ip), 2);
 	printf("svr_port = %s\n", sys_env.svr_port);
+	write_logs("SIM7000E", (char*)"svr_port = ", strlen((char*)"svr_port = "), 2);
+	write_logs("SIM7000E", (char*)sys_env.svr_port, strlen((char*)sys_env.svr_port), 2);
 	printf("svr_apn = %s\n", sys_env.svr_apn);
+	write_logs("SIM7000E", (char*)"svr_apn = ", strlen((char*)"svr_apn = "), 2);
+	write_logs("SIM7000E", (char*)sys_env.svr_apn, strlen((char*)sys_env.svr_apn), 2);
 }
 
 void sys_env_update_meter(u32 value)
@@ -144,16 +150,16 @@ FRESULT scan_files(char *path)
 				path[i] = 0; 
 			} else {
 				u8 j = 0;
-				u8 len = strlen((const char*)mp3_list);
+				u8 len = strlen((const char*)g_mp3_list);
 				for (j=len; j<128; j++) {
 					if ('.' == fno.fname[j-len]) {
-						mp3_list[j] = ':';
+						g_mp3_list[j] = ':';
 						break;
 					} else {
-						mp3_list[j] = fno.fname[j-len];
+						g_mp3_list[j] = fno.fname[j-len];
 					}
 				}
-				strcpy((char*)mp3_list+j+1, "01234567890123456789012345678901|");
+				strcpy((char*)g_mp3_list+j+1, "01234567890123456789012345678901|");
 				printf("this is file %s/%s\n", path, fno.fname);
 			}
 		}
@@ -206,7 +212,7 @@ void create_logfile(void)
 		RTC_GetTime(RTC_Format_BIN,&RTC_TimeStruct);
 		RTC_GetDate(RTC_Format_BIN, &RTC_DateStruct);
 		
-		sprintf((char*)g_logname,"0:/LOG/2Y0%02d%02d%02d_%02d%02d%02d.log",RTC_DateStruct.RTC_Year,RTC_DateStruct.RTC_Month,RTC_DateStruct.RTC_Date,RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds);
+		sprintf((char*)g_logname,"0:/LOG/20%02d%02d%02d_%02d%02d%02d.log",RTC_DateStruct.RTC_Year,RTC_DateStruct.RTC_Month,RTC_DateStruct.RTC_Date,RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds);
 		
 		res = f_open(&f_txt,(const TCHAR*)g_logname,FA_READ|FA_WRITE|FA_CREATE_ALWAYS);
 		if (0 == res) {
@@ -217,6 +223,7 @@ void create_logfile(void)
 
 void write_logs(char *module, char *log, u16 size, u8 mode)
 {
+	return;
 	if (0 == g_sd_existing) {
 		return;
 	} else {

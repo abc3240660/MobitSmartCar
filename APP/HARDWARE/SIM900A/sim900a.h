@@ -11,7 +11,7 @@ extern __sim7500dev sim7500dev;
 
 #define PROTOCOL_HEAD	"^MOBIT"
 #define DEV_TAG			"ECAR"
-#define SW_VERSION		"V1.0"
+#define SW_VERSION		"201902112158"
 #define HW_VERSION		"V1.0"
 
 #define CMD_DEV_ACK		"Re"// DEV ACK
@@ -50,7 +50,7 @@ extern __sim7500dev sim7500dev;
 #define LEN_IMEI_NO     32
 #define LEN_BAT_VOL     32
 #define LEN_RSSI_VAL    32
-#define LEN_MAX_SEND    256
+#define LEN_MAX_SEND    1024
 #define LEN_MAX_RECV    32
 
 #define DEBUG_USE 1

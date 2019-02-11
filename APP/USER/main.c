@@ -57,7 +57,7 @@ u8 g_logmsg[LEN_LOG_MSG] = "";
 u8 g_mp3_play = 0;
 u8 g_mp3_play_name[LEN_FILE_NAME+1] = "";
 
-u8 mp3_list[128] = "";
+u8 g_mp3_list[512] = "";
 u32 g_trip_meters = 0;
 u32 g_trip_meters_old = 0;
 u32 g_total_meters = 0;
@@ -148,7 +148,7 @@ void do_vs_test(void)
 	delay_ms(1000);
 	vs_id = VS_Ram_Test();
 	
-	if (0x807F == vs_id) {
+	if (0x807F != vs_id) {
 		return;
 	}
 	
@@ -205,12 +205,13 @@ void system_init(void)
 	do_sd_init();
 	
 	create_directories();
-	//scan_files("0:/MUSIC");
 	
 	// CAN2_JumpLamp(5);
 	
 	delay_ms(1000);
 	SIM7000E_RST = 0;
+	
+	// do_vs_test();
 }
 
 void SoftReset(void)
@@ -366,10 +367,10 @@ void usart_task(void *pdata)
             continue;
           }
 
-					sprintf((char*)mp3_file, "0:/%s.wav", g_mp3_update_name);
+					sprintf((char*)mp3_file, "0:/MUSIC/%s.mp3", g_mp3_update_name);
 					res = f_open(&f_txt,(const TCHAR*)mp3_file,FA_READ|FA_WRITE);
 				} else if (g_iap_update != 0) {
-						res = f_open(&f_txt,(const TCHAR*)"0:/TEST.BIN",FA_READ|FA_WRITE);
+						res = f_open(&f_txt,(const TCHAR*)"0:/IAP/APP.BIN",FA_READ|FA_WRITE);
         }
 
 				if (0 == res) {
@@ -414,6 +415,10 @@ void HardFault_Handler(void)
 	printf("DFSR:%8X\r\n",temp);
 	temp=SCB->AFSR;
 	printf("AFSR:%8X\r\n",temp);
+
+	write_logs("SIM7000E", (char*)"HardFault_Handler -> Reboot\n", strlen((char*)"HardFault_Handler Enter -> Reboot\n"), 3);
+	SoftReset();
+
 	// LED1=!LED1;
 	while(t<5)
 	{

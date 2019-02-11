@@ -76,6 +76,7 @@ u8 USART1_RX_BUF_BAK_MOBIT[U1_RECV_LEN_ONE];
 void SoftReset(void);
 void write_logs(char *module, char *log, u16 size, u8 mode);
 
+extern u8 g_mp3_list[512];
 extern u8 g_mp3_play;
 extern u8 g_mp3_play_name[LEN_FILE_NAME+1];
 extern u8 g_calypso_card_id[CARD_ID_SIZE+1];
@@ -449,7 +450,10 @@ u8 sim7500e_send_cmd(u8 *cmd, u8 *ack, u16 waittime)
 	}
 	
 	printf("SIM7000E Send Data %s\n", cmd);
-	// write_logs("SIM7000E", (char*)cmd, strlen((char*)cmd), 1);
+
+	if (strstr((const char*)(cmd), PROTOCOL_HEAD)) {
+		write_logs("SIM7000E", (char*)cmd, strlen((char*)cmd), 1);
+	}
 	
 	if ((u32)cmd <= 0XFF) {
 		while ((USART1->SR&0X40) == 0);
@@ -665,7 +669,7 @@ void sim7500e_do_mp3_play_ack()
 
 	memset(send_buf_main, 0, LEN_MAX_SEND);
 	if (strlen((const char*)g_mp3_play_name) < 40) {
-        sprintf(filename, "0:/MUSIC/%s", g_mp3_play_name);
+        sprintf(filename, "0:/MUSIC/%s.mp3", g_mp3_play_name);
     }
 
 	if (0 == f_open(&f_txt,(const TCHAR*)filename, FA_READ)) {// existing
@@ -692,10 +696,10 @@ void sim7500e_do_query_bms_ack()
 // DEV ACK
 void sim7500e_do_query_mp3_ack()
 {
-	// MAX Length = 256
+	memset(g_mp3_list, 0, 512);
 	memset(send_buf_main, 0, LEN_MAX_SEND);
-	// TBD: Scan files
-	// sprintf(send_buf_main, "%s,%s,%s,%s,%s,%d,%d,%d$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_DEV_ACK, CMD_QUERY_MP3, g_bms_battery_vol, g_bms_charged_times, g_bms_temp_max);
+	scan_files("0:/MUSIC");
+	sprintf(send_buf_main, "%s,%s,%s,%s,%s,%s$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_DEV_ACK, CMD_QUERY_MP3, g_mp3_list);
 
 	sim7500e_tcp_send(send_buf_main);
 }
@@ -887,6 +891,8 @@ void sim7500e_parse_msg(char* msg)
 						sim7500e_do_query_gps_ack();
 					} else if (QUERY_BMS == cmd_type) {
 						sim7500e_do_query_bms_ack();
+					} else if (QUERY_MP3 == cmd_type) {
+						sim7500e_do_query_mp3_ack();
 					} else if (STOP_TRACE == cmd_type) {
 						g_gps_trace_gap = 0;
 						printf("g_gps_trace_gap = %d\n", g_gps_trace_gap);
@@ -931,9 +937,15 @@ void sim7500e_parse_msg(char* msg)
 					strncpy((char*)g_mp3_update_name, split_str, LEN_FILE_NAME);
 					printf("g_mp3_update_name = %s\n", g_mp3_update_name);
 				} else if (5 == index) {
-					g_mp3_update = 1;
 					memset(g_mp3_update_url, 0, LEN_DW_URL);
-					strncpy((char*)g_mp3_update_url, split_str, LEN_DW_URL);
+					if (strlen(split_str) < 10) {// if url NULL -> delete file
+						u8 mp3_file[LEN_FILE_NAME+1] = "";
+						sprintf((char*)mp3_file, "0:/MUSIC/%s.mp3", g_mp3_update_name);
+						f_unlink((const char*)mp3_file);
+					} else {
+						g_mp3_update = 1;
+						strncpy((char*)g_mp3_update_url, split_str, LEN_DW_URL);
+					}
 					printf("g_mp3_update_url = %s\n", g_mp3_update_url);
 				} else if (6 == index) {
 					memset(g_mp3_update_md5, 0, LEN_DW_MD5);
@@ -1163,7 +1175,7 @@ void sim7500e_http_mp3()
 				return;
 			}
 
-            sprintf((char*)mp3_file, "0:/%s.wav", g_mp3_update_name);
+      sprintf((char*)mp3_file, "0:/MUSIC/%s.mp3", g_mp3_update_name);
 			res = f_open(&f_txt,(const TCHAR*)mp3_file,FA_READ|FA_WRITE|FA_CREATE_ALWAYS);
 			if (0 == res) {
 				f_close(&f_txt);
@@ -1217,7 +1229,7 @@ void sim7500e_http_iap()
 				return;
 			}
 
-			res = f_open(&f_txt,(const TCHAR*)"0:/TEST.BIN",FA_READ|FA_WRITE|FA_CREATE_ALWAYS);
+			res = f_open(&f_txt,(const TCHAR*)"0:/IAP/APP.BIN",FA_READ|FA_WRITE|FA_CREATE_ALWAYS);
 			if (0 == res) {
 				f_close(&f_txt);
 			} else {
@@ -1316,17 +1328,21 @@ void sim7500e_mobit_process(u8 index)
 	// Received User Data
 	pTemp = (u8*)strstr((const char*)(USART1_RX_BUF+U1_RECV_LEN_ONE*index), PROTOCOL_HEAD);
 	if (pTemp) {
+		u16 i = 0;
 		data_lenth = strlen((const char*)pTemp);
 				
 		memset(USART1_RX_BUF_BAK_MOBIT, 0, U1_RECV_LEN_ONE);
 		memcpy(USART1_RX_BUF_BAK_MOBIT, pTemp, data_lenth);
-				
-		if (data_lenth < LEN_MAX_RECV) {
-			USART1_RX_BUF[U1_RECV_LEN_ONE*index+data_lenth] = '\0';// $ -> 0
-		}
+
+		printf("RECVED1 MSG(%dB): %s\n", data_lenth, USART1_RX_BUF_BAK_MOBIT);
+		write_logs("SIM7000E", (char*)(USART1_RX_BUF_BAK_MOBIT), data_lenth, 0);
 		
-		printf("RECVED MSG(%dB): %s\n", data_lenth, USART1_RX_BUF_BAK_MOBIT);
-				
+		for (i=0; i<data_lenth; i++) {
+			if ('$' == USART1_RX_BUF_BAK_MOBIT[i]) {
+				USART1_RX_BUF_BAK_MOBIT[i] = 0;
+			}
+		}
+
 		sim7500e_parse_msg((char*)USART1_RX_BUF_BAK_MOBIT);
 	}
 	
