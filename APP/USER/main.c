@@ -25,22 +25,22 @@ __align(8) static OS_STK START_TASK_STK[START_STK_SIZE];
 void start_task(void *pdata);
 
 #define LOWER_TASK_PRIO                 8
-#define LOWER_STK_SIZE                  128
+#define LOWER_STK_SIZE                  1024
 __align(8) static OS_STK LOWER_TASK_STK[LOWER_STK_SIZE];
 void lower_task(void *pdata);
 
 #define USART_TASK_PRIO                 7
-#define USART_STK_SIZE                  512
+#define USART_STK_SIZE                  1024
 __align(8) static OS_STK USART_TASK_STK[USART_STK_SIZE];
 void usart_task(void *pdata);
 
 #define MAIN_TASK_PRIO                  6
-#define MAIN_STK_SIZE                   1200
+#define MAIN_STK_SIZE                   1024
 __align(8) static OS_STK MAIN_TASK_STK[MAIN_STK_SIZE];
 void main_task(void *pdata);
 
 #define HIGHER_TASK_PRIO                3
-#define HIGHER_STK_SIZE                 256
+#define HIGHER_STK_SIZE                 1024
 __align(8) static OS_STK HIGHER_TASK_STK[HIGHER_STK_SIZE];
 void higher_task(void *pdata);
 
