@@ -184,8 +184,6 @@ void system_init(void)
 	
 	hc08_init();
 
-	spiflash_init();
-
 	My_RTC_Init();
 	RTC_Set_WakeUp(RTC_WakeUpClock_CK_SPRE_16bits,0);
 
@@ -204,6 +202,8 @@ void system_init(void)
 
 	do_sd_init();
 	
+	spiflash_init();
+
 	create_directories();
 	
 	// CAN2_JumpLamp(5);
@@ -322,7 +322,7 @@ void main_task(void *pdata)
 		}
 
 		// Update total_meters into flash
-		if (50 == loop_cnt) {
+		if (50 == loop_cnt++) {
 			loop_cnt = 0;
 
 			if (g_total_meters != g_total_meters_old) {
