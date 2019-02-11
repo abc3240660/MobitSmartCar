@@ -452,7 +452,7 @@ u8 sim7500e_send_cmd(u8 *cmd, u8 *ack, u16 waittime)
 	printf("SIM7000E Send Data %s\n", cmd);
 
 	if (strstr((const char*)(cmd), PROTOCOL_HEAD)) {
-		//write_logs("SIM7000E", (char*)cmd, strlen((char*)cmd), 1);
+		write_logs("SIM7000E", (char*)cmd, strlen((char*)cmd), 1);
 	}
 	
 	if ((u32)cmd <= 0XFF) {
@@ -984,7 +984,7 @@ u8 sim7500e_setup_connect(void)
 		return 1;
 	}
 
-	write_logs("SIM7000E", (char*)"TCP CONNECTED", strlen((char*)"TCP CONNECTED"), 1);
+	write_logs("SIM7000E", (char*)"TCP CONNECTED", strlen((char*)"TCP CONNECTED"), 2);
 
 	i = 0;
 	while (1) {
@@ -1337,7 +1337,7 @@ void sim7500e_mobit_process(u8 index)
 		memcpy(USART1_RX_BUF_BAK_MOBIT, pTemp, data_lenth);
 
 		printf("RECVED1 MSG(%dB): %s\n", data_lenth, USART1_RX_BUF_BAK_MOBIT);
-		//write_logs("SIM7000E", (char*)(USART1_RX_BUF_BAK_MOBIT), data_lenth, 0);
+		write_logs("SIM7000E", (char*)(USART1_RX_BUF_BAK_MOBIT), data_lenth, 0);
 		
 		for (i=0; i<data_lenth; i++) {
 			if ('$' == USART1_RX_BUF_BAK_MOBIT[i]) {

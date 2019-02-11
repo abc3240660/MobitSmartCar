@@ -11,7 +11,7 @@ extern __sim7500dev sim7500dev;
 
 #define PROTOCOL_HEAD	"^MOBIT"
 #define DEV_TAG			"ECAR"
-#define SW_VERSION		"201902112158"
+#define SW_VERSION		"V201902112315"
 #define HW_VERSION		"V1.0"
 
 #define CMD_DEV_ACK		"Re"// DEV ACK

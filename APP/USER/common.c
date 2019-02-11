@@ -82,14 +82,14 @@ void sys_env_dump(void)
 	memcpy(g_svr_port, sys_env.svr_port, 8);
 	memcpy(g_svr_apn, sys_env.svr_apn, 32);
 	printf("svr_ip = %s\n", sys_env.svr_ip);
-	//write_logs("SIM7000E", (char*)"svr_ip = ", strlen((char*)"svr_ip = "), 2);
-	//write_logs("SIM7000E", (char*)sys_env.svr_ip, strlen((char*)sys_env.svr_ip), 2);
+	write_logs("SIM7000E", (char*)"svr_ip = ", strlen((char*)"svr_ip = "), 2);
+	write_logs("SIM7000E", (char*)sys_env.svr_ip, strlen((char*)sys_env.svr_ip), 2);
 	printf("svr_port = %s\n", sys_env.svr_port);
-	//write_logs("SIM7000E", (char*)"svr_port = ", strlen((char*)"svr_port = "), 2);
-	//write_logs("SIM7000E", (char*)sys_env.svr_port, strlen((char*)sys_env.svr_port), 2);
+	write_logs("SIM7000E", (char*)"svr_port = ", strlen((char*)"svr_port = "), 2);
+	write_logs("SIM7000E", (char*)sys_env.svr_port, strlen((char*)sys_env.svr_port), 2);
 	printf("svr_apn = %s\n", sys_env.svr_apn);
-	//write_logs("SIM7000E", (char*)"svr_apn = ", strlen((char*)"svr_apn = "), 2);
-	//write_logs("SIM7000E", (char*)sys_env.svr_apn, strlen((char*)sys_env.svr_apn), 2);
+	write_logs("SIM7000E", (char*)"svr_apn = ", strlen((char*)"svr_apn = "), 2);
+	write_logs("SIM7000E", (char*)sys_env.svr_apn, strlen((char*)sys_env.svr_apn), 2);
 }
 
 void sys_env_update_meter(u32 value)
