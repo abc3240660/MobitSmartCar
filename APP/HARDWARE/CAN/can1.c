@@ -2,11 +2,16 @@
 #include "led.h"
 #include "sim900a.h"
 
+char log_msg[64] = {0};
+u16 test_cnt = 0;
+
 extern u16 g_car_sta;
 extern u8 g_door_state;
 extern u8 g_power_state;
 extern u32 g_trip_meters;
 extern u8 g_drlock_sta_chged;
+
+void write_logs(char *module, char *log, u16 size, u8 mode);
 /****************************************************************************
 * 名    称: u8 CAN1_Mode_Init(u8 mode)
 * 功    能：CAN初始化
@@ -190,6 +195,15 @@ u8 CAN1_Receive_Msg(u8 *buf)
 
 		g_trip_meters = (RxMessage.Data[7]<<8) + RxMessage.Data[6];
 	}
+
+    test_cnt++;
+
+    if (test_cnt > 250) {
+        sprintf(log_msg, "RECV: %.8X - %.2X%.2X%.2X", RxMessage.ExtId, RxMessage.Data[0], RxMessage.Data[1], RxMessage.Data[2]);
+        write_logs("CAN1", (char*)log_msg, strlen((char*)log_msg), 2);
+        test_cnt = 0;
+    }
+
 
 	return RxMessage.DLC;	
 }
