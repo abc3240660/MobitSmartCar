@@ -3,7 +3,8 @@
 #include "sim900a.h"
 
 char log_msg[64] = {0};
-u16 test_cnt = 0;
+u16 test_cnt_peps = 0;
+u16 test_cnt_mc3264 = 0;
 
 extern u16 g_car_sta;
 extern u8 g_door_state;
@@ -182,6 +183,20 @@ u8 CAN1_Receive_Msg(u8 *buf)
 		}
 
 		g_drlock_sta_chged |= 0x80;
+		
+    test_cnt_peps++;
+
+    if (test_cnt_peps > 250) {
+				memset(log_msg, 0, 64);
+        sprintf(log_msg, "RECV: %.8X - %.2X%.2X%.2X%.2X%.2X%.2X%.2X%.2X", RxMessage.ExtId, RxMessage.Data[0], RxMessage.Data[1], RxMessage.Data[2], RxMessage.Data[3], RxMessage.Data[4], RxMessage.Data[5], RxMessage.Data[6], RxMessage.Data[7]);
+        write_logs("CAN1", (char*)log_msg, strlen((char*)log_msg), 2);
+        test_cnt_peps = 0;
+    }
+
+		if (0 == (test_cnt_peps%20)) {
+			LED_M = !LED_M;
+		}
+
 	// Byte1:
 	// BIT0~1: 00-N, 01-D, 10-R
 	// Byte2:Speed LB(rpm/bit)
@@ -194,16 +209,20 @@ u8 CAN1_Receive_Msg(u8 *buf)
 		g_car_sta |= (((RxMessage.Data[0])&0x03)<<8);
 
 		g_trip_meters = (RxMessage.Data[7]<<8) + RxMessage.Data[6];
-	}
+		
+    test_cnt_mc3264++;
 
-    test_cnt++;
-
-    if (test_cnt > 250) {
-        sprintf(log_msg, "RECV: %.8X - %.2X%.2X%.2X", RxMessage.ExtId, RxMessage.Data[0], RxMessage.Data[1], RxMessage.Data[2]);
+    if (test_cnt_mc3264 > 250) {
+				memset(log_msg, 0, 64);
+        sprintf(log_msg, "RECV: %.8X - %.2X%.2X%.2X%.2X%.2X%.2X%.2X%.2X", RxMessage.ExtId, RxMessage.Data[0], RxMessage.Data[1], RxMessage.Data[2], RxMessage.Data[3], RxMessage.Data[4], RxMessage.Data[5], RxMessage.Data[6], RxMessage.Data[7]);
         write_logs("CAN1", (char*)log_msg, strlen((char*)log_msg), 2);
-        test_cnt = 0;
+        test_cnt_mc3264 = 0;
     }
 
+		if (0 == (test_cnt_mc3264%20)) {
+			LED_Y = !LED_Y;
+		}
+	}
 
 	return RxMessage.DLC;	
 }

@@ -18,10 +18,13 @@
 #define HC08_BT_RST  PBout(7)
 #define SIM7000E_PWR PEout(2)
 #define SIM7000E_RST PEout(3)
-#define LED0 PEout(3)	 
-#define LED1 PEout(4)	 
-#define LED2 PGout(9)	  
-#define LEDX PFout(11)
+
+#define LED_G PDout(7)
+#define LED_Y PDout(6)
+#define LED_R PDout(5)
+
+#define LED_M PDout(3)
+#define LED_N PDout(4)
 
 void LED_Init(void);//≥ı ºªØ		 				    
 #endif

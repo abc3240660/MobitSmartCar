@@ -425,12 +425,10 @@ void HardFault_Handler(void)
 	write_logs("SIM7000E", (char*)"HardFault_Handler -> Reboot\n", strlen((char*)"HardFault_Handler Enter -> Reboot\n"), 3);
 	SoftReset();
 
-	// LED1=!LED1;
 	while(t<5)
 	{
 		t++;
-		LED2=!LED2;
-		//BEEP=!BEEP;
+		LED_R = !LED_R;
 		for(i=0;i<0X1FFFFF;i++);
 	}
 }

@@ -1430,7 +1430,7 @@ void sim7500e_communication_loop(u8 mode,u8* ipaddr,u8* port)
 
 	while (1) {
 		if (0 == (timex%20)) {// every 200ms
-			LED0 != LED0;
+			LED_G = !LED_G;
 
 			// If TCP Lost Connection, Just Re-connect
 			if ((2==connectsta) || (g_hbeaterrcnt>8)) {

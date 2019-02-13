@@ -72,7 +72,6 @@ void TIM4_IRQHandler(void)
 	}
 	if(TIM_GetITStatus(TIM4, TIM_IT_CC3) != RESET)//捕获1发生捕获事件
 	{
-		// LED1=!LED1;//LED1翻转
 		capture1= TIM_GetCapture3(TIM4)/10;
 		total_msTtemp+=capture1;
 		total_msTtemp-=capture2;
