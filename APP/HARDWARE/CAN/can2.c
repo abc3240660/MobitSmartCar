@@ -97,9 +97,11 @@ u8 CAN2_Mode_Init(u8 mode)
 void CAN2_RX0_IRQHandler(void)
 {
   	CanRxMsg RxMessage;
-    CAN_Receive(CAN2, 0, &RxMessage);
 	
-		printf("CAN2 Recved Msg 0x%.8X\n", RxMessage.ExtId);
+    CAN_Receive(CAN2, 0, &RxMessage);
+		// CAN2_Receive_Msg(NULL);
+	
+		// printf("CAN2 Recved Msg 0x%.8X\n", RxMessage.ExtId);
 }
 #endif
 
@@ -152,17 +154,20 @@ u8 CAN2_Receive_Msg(u8 *buf)
 			if (0x02 == (RxMessage.Data[0]&0x2)) {// battery charging
 				if (0 == g_bms_charge_sta_chged) {
 					g_bms_charge_sta_chged = 1;
+					printf("bms = 0\n");
 					g_bms_charged_times++;
 					sys_env_init();
 				}
 			} else {
 				if (1 == g_bms_charge_sta_chged) {
 					g_bms_charge_sta_chged = 0;
+					printf("bms = 1\n");
 				}
 			}
 			
 			g_bms_charge_sta_chged |= 0x80;
 			g_bms_battery_vol = RxMessage.Data[1];
+			printf("g_bms_battery_vol = %d\n", g_bms_battery_vol);
 		} else if (0x18FE28F4 == RxMessage.ExtId) {
 			g_bms_temp_max = RxMessage.Data[4];
 			g_bms_temp_min = RxMessage.Data[5];
@@ -187,15 +192,6 @@ u8 CAN2_Receive_Msg(u8 *buf)
 			LED_N = !LED_N;
 		}
 	return RxMessage.DLC;	
-}
-
-u8 CAN2_JumpLamp(u8 times)
-{
-	u8 can1_sendbuf[8]={0x01, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-	
-	CAN2_Send_Msg(can1_sendbuf,8);//·¢ËÍ8¸ö×Ö½Ú 
-	
-	return 0;
 }
 
 

@@ -6,6 +6,8 @@ char log_msg[64] = {0};
 u16 test_cnt_peps = 0;
 u16 test_cnt_mc3264 = 0;
 
+u32 can1_rx_cnt = 0;
+
 extern u16 g_car_sta;
 extern u8 g_door_state;
 extern u8 g_power_state;
@@ -93,9 +95,13 @@ u8 CAN1_Mode_Init(u8 mode)
 void CAN1_RX0_IRQHandler(void)
 {
   	CanRxMsg RxMessage;
-    CAN_Receive(CAN1, 0, &RxMessage);
 	
-		printf("CAN1 Recved Msg 0x%.8X\n", RxMessage.ExtId);
+		can1_rx_cnt++;
+
+    // CAN_Receive(CAN1, 0, &RxMessage);
+		CAN1_Receive_Msg(NULL);
+	
+		// printf("CAN1 Recved Msg 0x%.8X\n", RxMessage.ExtId);
 }
 #endif
 
@@ -113,6 +119,8 @@ u8 CAN1_Send_Msg(u8* msg,u8 len)
   u8 mbox;
   u16 i=0;
   CanTxMsg TxMessage;
+	u32 can1_rx_cnt_old = can1_rx_cnt;
+	
   TxMessage.StdId=0x78563412;	 // 标准标识符为0
   TxMessage.ExtId=0x1004C899;	 // 设置扩展标示符（29位）
   TxMessage.IDE=CAN_ID_EXT;		   // 使用扩展标识符
@@ -120,9 +128,30 @@ u8 CAN1_Send_Msg(u8* msg,u8 len)
   TxMessage.DLC=len;	   // 发送两帧信息
   for(i=0;i<len;i++)
   TxMessage.Data[i]=msg[i];				 // 第一帧信息          
+	
+	i = 0;
+	while(1) {
+		// just RX 1ms ago
+		if (can1_rx_cnt_old != can1_rx_cnt) {
+			break;
+		}
+		// No RX for 1s
+		if (i >= 1000) {
+			break;
+		}
+		
+		i++;
+		delay_ms(1);
+	}
+	
   mbox= CAN_Transmit(CAN1, &TxMessage);   
   i=0;
-  while((CAN_TransmitStatus(CAN1, mbox)==CAN_TxStatus_Failed)&&(i<0XFFF))i++;	//等待发送结束
+  // while((CAN_TransmitStatus(CAN1, mbox)==CAN_TxStatus_Failed)&&(i<0XFFF))i++;	//等待发送结束
+	while((CAN_TransmitStatus(CAN1, mbox)==CAN_TxStatus_Failed)) {
+		i++;
+		delay_ms(1);
+	}
+	
   if(i>=0XFFF)return 1;
   return 0;		
 }
@@ -141,8 +170,8 @@ u8 CAN1_Receive_Msg(u8 *buf)
 	CanRxMsg RxMessage;
     if( CAN_MessagePending(CAN1,CAN_FIFO0)==0)return 0;		//没有接收到数据,直接退出 
     CAN_Receive(CAN1, CAN_FIFO0, &RxMessage);//读取数据	
-    for(i=0;i<RxMessage.DLC;i++)
-    buf[i]=RxMessage.Data[i];  
+//    for(i=0;i<RxMessage.DLC;i++)
+//    buf[i]=RxMessage.Data[i];  
 
 	// Byte1:
 	// BIT0-door: 0-closed / 1-opened
@@ -186,11 +215,12 @@ u8 CAN1_Receive_Msg(u8 *buf)
 		
     test_cnt_peps++;
 
-    if (test_cnt_peps > 25) {
-				memset(log_msg, 0, 64);
-        sprintf(log_msg, "RECV: %.8X - %.2X%.2X%.2X%.2X%.2X%.2X%.2X%.2X", RxMessage.ExtId, RxMessage.Data[0], RxMessage.Data[1], RxMessage.Data[2], RxMessage.Data[3], RxMessage.Data[4], RxMessage.Data[5], RxMessage.Data[6], RxMessage.Data[7]);
-        write_logs("CAN1", (char*)log_msg, strlen((char*)log_msg), 2);
-        test_cnt_peps = 0;
+    if (test_cnt_peps > 2) {
+			// CAN1_JumpLamp(5);
+//				memset(log_msg, 0, 64);
+//        sprintf(log_msg, "RECV: %.8X - %.2X%.2X%.2X%.2X%.2X%.2X%.2X%.2X", RxMessage.ExtId, RxMessage.Data[0], RxMessage.Data[1], RxMessage.Data[2], RxMessage.Data[3], RxMessage.Data[4], RxMessage.Data[5], RxMessage.Data[6], RxMessage.Data[7]);
+//        write_logs("CAN1", (char*)log_msg, strlen((char*)log_msg), 2);
+      test_cnt_peps = 0;
     }
 
 		if (0 == (test_cnt_peps%20)) {

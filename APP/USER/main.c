@@ -212,7 +212,8 @@ void system_init(void)
 
 	create_directories();
 	
-	// CAN2_JumpLamp(5);
+	// CAN1_JumpLamp(5);
+	// CAN1_RingAlarm(5);
 	
 	delay_ms(1000);
 	SIM7000E_RST = 0;
@@ -250,10 +251,10 @@ void start_task(void *pdata)
 	OSStatInit();
 
 	OS_ENTER_CRITICAL();
-	OSTaskCreate(main_task,(void *)0,(OS_STK*)&MAIN_TASK_STK[MAIN_STK_SIZE-1],MAIN_TASK_PRIO);
+	//OSTaskCreate(main_task,(void *)0,(OS_STK*)&MAIN_TASK_STK[MAIN_STK_SIZE-1],MAIN_TASK_PRIO);
 	OSTaskCreate(usart_task,(void *)0,(OS_STK*)&USART_TASK_STK[USART_STK_SIZE-1],USART_TASK_PRIO);
-	OSTaskCreate(higher_task,(void *)0,(OS_STK*)&HIGHER_TASK_STK[HIGHER_STK_SIZE-1],HIGHER_TASK_PRIO);
-	OSTaskCreate(lower_task,(void *)0,(OS_STK*)&LOWER_TASK_STK[LOWER_STK_SIZE-1],LOWER_TASK_PRIO);
+	//OSTaskCreate(higher_task,(void *)0,(OS_STK*)&HIGHER_TASK_STK[HIGHER_STK_SIZE-1],HIGHER_TASK_PRIO);
+	//OSTaskCreate(lower_task,(void *)0,(OS_STK*)&LOWER_TASK_STK[LOWER_STK_SIZE-1],LOWER_TASK_PRIO);
 	OSTaskSuspend(START_TASK_PRIO);
 
 	OS_EXIT_CRITICAL();
@@ -303,6 +304,12 @@ void lower_task(void *pdata)
 
 		MPU6050_Risk_Check();
 
+		if (0 == KEY_HAND_BRAKE) {// La
+			g_mp3_play = 0;
+		} else {// Fang
+			g_mp3_play = 0;
+		}
+		
     OSTimeDlyHMSM(0,0,0,500);// 500ms
 	}
 }
@@ -353,9 +360,19 @@ void usart_task(void *pdata)
 			UART5_RX_STA = 0;
     }
 
-    if (loop_cnt++ == 3) {
+    if (loop_cnt++ == 10) {
 			loop_cnt = 0;
-      // printf("Hall Counter = %d\n", pluse_num_new);
+			CAN1_JumpLamp(5);
+			//delay_ms(10);
+			//CAN1_JumpLamp(5);
+			//delay_ms(10);
+			//CAN1_JumpLamp(5);
+			//delay_ms(10);
+			//CAN1_JumpLamp(5);
+			//delay_ms(10);
+			//CAN1_JumpLamp(5);
+			// CAN1_RingAlarm(5);
+      printf("pluse_num_new = %d\n", pluse_num_new);
     }
 
 		if (1 == g_dw_write_enable) {

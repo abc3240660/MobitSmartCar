@@ -70,6 +70,8 @@ void TIM4_IRQHandler(void)
 		pluse_num =pluse_num_new - pluse_num_old;
 		pluse_num_old = pluse_num_new;
 	}
+
+#if 0
 	if(TIM_GetITStatus(TIM4, TIM_IT_CC3) != RESET)//捕获1发生捕获事件
 	{
 		capture1= TIM_GetCapture3(TIM4)/10;
@@ -80,6 +82,8 @@ void TIM4_IRQHandler(void)
 		total_msTtemp=0;
 		exp_num=0;
 	}
+#endif
+
 	TIM_ClearITPendingBit(TIM4, TIM_IT_CC3|TIM_IT_Update); //清除中断标志位
 }
 
