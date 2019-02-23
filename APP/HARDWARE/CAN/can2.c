@@ -168,6 +168,15 @@ u8 CAN2_Receive_Msg(u8 *buf)
 			g_bms_charge_sta_chged |= 0x80;
 			g_bms_battery_vol = RxMessage.Data[1];
 			printf("g_bms_battery_vol = %d\n", g_bms_battery_vol);
+			
+			test_cnt_bms++;
+
+			if (test_cnt_bms > 25) {
+					memset(log_msg_bms, 0, 64);
+					sprintf(log_msg_bms, "RECV: %.8X - %.2X%.2X%.2X%.2X%.2X%.2X%.2X%.2X", RxMessage.ExtId, RxMessage.Data[0], RxMessage.Data[1], RxMessage.Data[2], RxMessage.Data[3], RxMessage.Data[4], RxMessage.Data[5], RxMessage.Data[6], RxMessage.Data[7]);
+					write_logs("CAN2", (char*)log_msg_bms, strlen((char*)log_msg_bms), 2);
+					test_cnt_bms = 0;
+			}
 		} else if (0x18FE28F4 == RxMessage.ExtId) {
 			g_bms_temp_max = RxMessage.Data[4];
 			g_bms_temp_min = RxMessage.Data[5];
@@ -178,15 +187,6 @@ u8 CAN2_Receive_Msg(u8 *buf)
 				u8 index = ((RxMessage.ExtId&0xFFFF)>>15) - 0x18C8;
 			} 
 		}
-		
-		test_cnt_bms++;
-
-    if (test_cnt_bms > 25) {
-				memset(log_msg_bms, 0, 64);
-        sprintf(log_msg_bms, "RECV: %.8X - %.2X%.2X%.2X%.2X%.2X%.2X%.2X%.2X", RxMessage.ExtId, RxMessage.Data[0], RxMessage.Data[1], RxMessage.Data[2], RxMessage.Data[3], RxMessage.Data[4], RxMessage.Data[5], RxMessage.Data[6], RxMessage.Data[7]);
-        write_logs("CAN2", (char*)log_msg_bms, strlen((char*)log_msg_bms), 2);
-        test_cnt_bms = 0;
-    }
 
 		if (0 == (test_cnt_bms%20)) {
 			LED_N = !LED_N;

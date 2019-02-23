@@ -11,6 +11,7 @@
 #include "rfid.h"
 #include "MP3PLAY.H"
 #include "rtc.h"
+#include "stdarg.h"
 
 // Door LOCK Sta:
 // BIT7: 0-idle, 1-changed
@@ -70,8 +71,14 @@ u8 g_svr_apn[32] = "CMNET";
 u32 g_need_iap_flag = 0;
 u32 g_iap_sta_flag = 0;
 
+
+u8 g_cgatt_sta = 0;
+u8 g_http_action_sta = 0;
+
 u8 USART1_RX_BUF_BAK[U1_RECV_LEN_ONE];
 u8 USART1_RX_BUF_BAK_MOBIT[U1_RECV_LEN_ONE];
+
+u32 os_jiffies = 0;// 100ms per
 
 void SoftReset(void);
 void write_logs(char *module, char *log, u16 size, u8 mode);
@@ -81,6 +88,8 @@ extern u8 g_mp3_play;
 extern u8 g_mp3_play_name[LEN_FILE_NAME+1];
 extern u8 g_calypso_card_id[CARD_ID_SIZE+1];
 extern u8 g_calypso_serial_num[SERIAL_NUM_SIZE+1];
+
+extern OS_EVENT* sem_atsend;
 
 __sim7500dev sim7500dev;
 
@@ -371,6 +380,7 @@ u8* sim7500e_check_cmd(u8 *str, u8 index)
 	char *strx = 0;
 
 #if 0
+	u8 i =0 ;
 	printf("ACK+++");
 	
 	for (i=0; i<10; i++) {
@@ -393,7 +403,7 @@ u8* sim7500e_check_cmd(u8 *str, u8 index)
 	}
 
 	if (0 == strcmp((const char*)str, "CONNECT")) {
-		strx = sim7500e_connect_check(index);
+		strx = sim7500e_connect_check(index);	
 	} else if (0 == strcmp((const char*)str, "XXX")) {
 		strx = strstr((const char*)str, "ERROR");
 		if (NULL == strx) {
@@ -405,6 +415,24 @@ u8* sim7500e_check_cmd(u8 *str, u8 index)
 	
 	if (0 == strcmp((const char*)str, "SEND OK")) {
 		g_hbeaterrcnt = 0;
+	}
+	
+	if (strx != NULL) {
+		if (0 == strncmp((const char*)strx, "+CGATT: ", strlen("+CGATT: "))) {
+			if ('1' == *(strx+sizeof("+CGATT: ")-1)) {
+				g_cgatt_sta = 1;
+			} else {
+				g_cgatt_sta = 0;
+			}
+		}
+
+		if (0 == strncmp((const char*)strx, "+HTTPACTION: ", strlen("+HTTPACTION: "))) {
+			if (0 == strncmp((const char*)strx+sizeof("+HTTPACTION: ")-1, "0,200", strlen("0,200"))) {
+				g_http_action_sta = 1;
+			} else {
+				g_http_action_sta = 0;
+			}
+		}
 	}
 	
 	// if use strcmp, when SEND OK + ^Mobit will lose one MSG
@@ -441,6 +469,9 @@ u8 sim7500e_send_cmd(u8 *cmd, u8 *ack, u16 waittime)
 	u8 i = 0;
 	u8 ret = 0;
 	u8 res = 0;
+	u8 err = 0;
+
+	OSSemPend(sem_atsend,0,&err);
 	
 	sim7500e_clear_recved_buf();
 
@@ -490,6 +521,8 @@ u8 sim7500e_send_cmd(u8 *cmd, u8 *ack, u16 waittime)
 			res = 2;
 		}
 	}
+
+	OSSemPost(sem_atsend);
 
 //	printf("Leave SEND\n");
 	return res;
@@ -1032,6 +1065,8 @@ u8 sim7500e_setup_initial(void)
 {
 	u8 i = 0;
 
+	g_cgatt_sta = 0;
+
 	for (i=0; i<5; i++) {
 		if (0 == sim7500e_send_cmd("AT","OK",20))break;
 		if (4 == i) return 1;
@@ -1068,10 +1103,21 @@ u8 sim7500e_setup_initial(void)
 		if(sim7500e_send_cmd("AT+CMNB=2","OK",40)) return 1;
 	}
 	
-	if(sim7500e_send_cmd("AT+CGATT?","+CGATT: 1",40)) {
-		if(sim7500e_send_cmd("AT+CGATT?","+CGATT: 1",40)) return 1;
-	}
+	g_cgatt_sta = 0;
 
+	for (i=0; i<5; i++) {
+		sim7500e_send_cmd("AT+CGATT?","+CGATT: ",40);
+		if (1 == g_cgatt_sta) {
+			break;
+		}
+
+		if (4 == i) {
+			return 1;
+		}
+
+		delay_ms(1000);
+	}
+	
 	if(sim7500e_send_cmd("AT+CIPSHUT","SHUT OK",200)) {
 		if(sim7500e_send_cmd("AT+CIPSHUT","SHUT OK",200)) return 1;
 	}
@@ -1104,6 +1150,9 @@ u8 sim7500e_setup_initial(void)
 
 u8 sim7500e_setup_http(void)
 {
+	u8 i = 0;
+	u32 time_start = 0;
+
 	sim7500e_send_cmd("AT+HTTPTERM","XXX",100);
 	delay_ms(1000);
 	sim7500e_send_cmd("AT+SAPBR=0,1","XXX",100);
@@ -1141,17 +1190,44 @@ u8 sim7500e_setup_http(void)
         sprintf(send_buf, "AT+HTTPPARA=\"URL\",\"%s\"", g_iap_update_url);
     }
 
-	//if (sim7500e_send_cmd("AT+HTTPPARA=\"URL\",\"http://gdlt.sc.chinaz.com/Files/DownLoad/sound1/201701/8224.wav\"","OK",1000)) {
-	//	if (sim7500e_send_cmd("AT+HTTPPARA=\"URL\",\"http://gdlt.sc.chinaz.com/Files/DownLoad/sound1/201701/8224.wav\"","OK",1000)) return 1;
-	//}
-
+#if 1// DEBUG
+	if (sim7500e_send_cmd("AT+HTTPPARA=\"URL\",\"http://gdlt.sc.chinaz.com/Files/DownLoad/sound1/201701/8224.wav\"","OK",1000)) {
+		if (sim7500e_send_cmd("AT+HTTPPARA=\"URL\",\"http://gdlt.sc.chinaz.com/Files/DownLoad/sound1/201701/8224.wav\"","OK",1000)) return 1;
+	}
+#else
 	if (sim7500e_send_cmd((u8*)send_buf,"OK",500)) {
 		if (sim7500e_send_cmd((u8*)send_buf,"OK",500)) return 1;
 	}
+#endif
+
+	g_http_action_sta = 0;
 	
-	if (sim7500e_send_cmd("AT+HTTPACTION=0","+HTTPACTION: 0,200",500)) {
-		if (sim7500e_send_cmd("AT+HTTPACTION=0","+HTTPACTION: 0,200",500)) return 1;
+	time_start = os_jiffies;
+	for (i=0; i<250; i++) {
+		sim7500e_send_cmd("AT+HTTPACTION=0","+HTTPACTION: ",500);
+		if (1 == g_http_action_sta) {
+			break;
+		}
+
+		// because long delay in sim7500e_send_cmd
+		// so we calculate the total time pasted after begin
+		if (os_jiffies > time_start) {
+			if ((os_jiffies-time_start) > 10*60) {// try 60s NG -> quit
+				break;
+			}
+		} else {
+			if ((10000-time_start+os_jiffies) > 10*60) {// try 60s NG -> quit
+				break;
+			}
+		}
+
+		if (240 == i) {
+			return 1;
+		}
+
+		delay_ms(1000);
 	}
+
 	g_dw_size_total = atoi((const char*)(USART1_RX_BUF_BAK+21));
 	printf("g_dw_size_total = %d\n", g_dw_size_total);
 	
@@ -1425,6 +1501,10 @@ void sim7500e_communication_loop(u8 mode,u8* ipaddr,u8* port)
 	if (sim7500e_setup_initial()) {
 		return;
 	}
+
+#if 1// DEBUG
+	sim7500e_setup_http();
+#endif
 
 	RTC_GetTime(RTC_Format_BIN, &RTC_TimeStruct_old);
 

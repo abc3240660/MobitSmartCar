@@ -50,6 +50,7 @@ int total_ms = 0;
 int g_sd_existing = 0;
 
 OS_EVENT* sem_beep;
+OS_EVENT* sem_atsend;
 
 u8 g_logname[LEN_FILE_NAME+1] = "";
 u8 g_logmsg[LEN_LOG_MSG] = "";
@@ -71,7 +72,7 @@ extern u8 g_dw_write_enable;
 extern vu16 g_data_pos;
 extern vu16 g_data_size;
 extern u8 USART1_RX_BUF_BAK[U1_RECV_LEN_ONE];
-
+extern u32 os_jiffies;
 int g_mpu_sta = 0;
 
 extern void sim7500e_mobit_process(u8 index);
@@ -200,7 +201,10 @@ void system_init(void)
 	my_mem_init(SRAMCCM);
 
 	TIM2_Init(9999,8399);
-	TIM4_Init(9999,8399);                                                                
+	TIM4_Init(9999,8399);
+
+	// 100ms
+	TIM5_Init(999,8399);	
 
 	VS_Init();
 
@@ -247,14 +251,15 @@ void start_task(void *pdata)
 	OS_CPU_SR cpu_sr = 0;
 	pdata = pdata;
 	sem_beep = OSSemCreate(1);
+	sem_atsend = OSSemCreate(1);
 
 	OSStatInit();
 
 	OS_ENTER_CRITICAL();
-	//OSTaskCreate(main_task,(void *)0,(OS_STK*)&MAIN_TASK_STK[MAIN_STK_SIZE-1],MAIN_TASK_PRIO);
+	OSTaskCreate(main_task,(void *)0,(OS_STK*)&MAIN_TASK_STK[MAIN_STK_SIZE-1],MAIN_TASK_PRIO);
 	OSTaskCreate(usart_task,(void *)0,(OS_STK*)&USART_TASK_STK[USART_STK_SIZE-1],USART_TASK_PRIO);
-	//OSTaskCreate(higher_task,(void *)0,(OS_STK*)&HIGHER_TASK_STK[HIGHER_STK_SIZE-1],HIGHER_TASK_PRIO);
-	//OSTaskCreate(lower_task,(void *)0,(OS_STK*)&LOWER_TASK_STK[LOWER_STK_SIZE-1],LOWER_TASK_PRIO);
+	OSTaskCreate(higher_task,(void *)0,(OS_STK*)&HIGHER_TASK_STK[HIGHER_STK_SIZE-1],HIGHER_TASK_PRIO);
+	OSTaskCreate(lower_task,(void *)0,(OS_STK*)&LOWER_TASK_STK[LOWER_STK_SIZE-1],LOWER_TASK_PRIO);
 	OSTaskSuspend(START_TASK_PRIO);
 
 	OS_EXIT_CRITICAL();

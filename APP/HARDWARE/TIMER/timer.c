@@ -6,6 +6,8 @@
 #include "usart5.h" 
 #include "usart6.h" 
 
+extern u32 os_jiffies;
+
 void write_logs(char *module, char *log, u16 size, u8 mode);
 void hc08_msg_process(u8 *data, u16 num);
 void hc08_debug_process(u8 *data, u16 num);
@@ -228,6 +230,7 @@ void TIM14_PWM_Init(u32 arr,u32 psc)
 	TIM_Cmd(TIM14, ENABLE);
 }  
 
+#if 0
 TIM_ICInitTypeDef  TIM5_ICInitStructure;
 void TIM5_CH1_Cap_Init(u32 arr,u16 psc)
 {		 
@@ -314,6 +317,8 @@ void TIM5_IRQHandler(void)
  	}
 	TIM_ClearITPendingBit(TIM5, TIM_IT_CC1|TIM_IT_Update);
 } 
+#endif
+
 void TIM9_CH2_PWM_Init(u16 arr,u16 psc)
 {		 					 
 	GPIO_InitTypeDef GPIO_InitStructure;
@@ -472,6 +477,7 @@ void TIM7_Int_Init(u16 arr,u16 psc)
 	NVIC_InitStructure.NVIC_IRQChannelCmd=ENABLE;
 	NVIC_Init(&NVIC_InitStructure); 							 
 } 
+#if 0
 void TIM12_CH2_PWM_Init(u16 arr,u16 psc)
 {		 					 
  
@@ -510,4 +516,47 @@ void TIM12_CH2_PWM_Init(u16 arr,u16 psc)
 	
 	TIM_Cmd(TIM12, ENABLE);
  
+}
+#endif
+
+void TIM5_Init(u16 arr,u16 psc)
+{
+	TIM_TimeBaseInitTypeDef	TIM_TimeBaseInitStructure;
+	NVIC_InitTypeDef NVIC_InitStructure;
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM5,ENABLE);
+
+	TIM_TimeBaseInitStructure.TIM_Prescaler=psc;
+	TIM_TimeBaseInitStructure.TIM_CounterMode=TIM_CounterMode_Up;
+	TIM_TimeBaseInitStructure.TIM_Period=arr;
+	TIM_TimeBaseInitStructure.TIM_ClockDivision=TIM_CKD_DIV1;
+	TIM_TimeBaseInit(TIM5,&TIM_TimeBaseInitStructure);
+	TIM_ITConfig(TIM5,TIM_IT_Update,ENABLE);
+
+	NVIC_InitStructure.NVIC_IRQChannel=TIM5_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority=0;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority=3;
+	NVIC_InitStructure.NVIC_IRQChannelCmd=ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
+
+	TIM_Cmd(TIM5,ENABLE);
+}
+
+void TIM5_IRQHandler(void)
+{
+#ifdef SYSTEM_SUPPORT_OS	 	
+	OSIntEnter();    
+#endif
+	
+	if(TIM_GetITStatus(TIM5,TIM_IT_Update)!=RESET)
+	{
+		os_jiffies++;
+		if (os_jiffies >= 10000) {
+			os_jiffies = 0;
+		}
+	}
+	TIM_ClearITPendingBit(TIM5,TIM_IT_Update);
+#ifdef SYSTEM_SUPPORT_OS	 
+	OSIntExit();  											 
+#endif
+
 }

@@ -39,6 +39,7 @@
 void TIM2_Init(u16 auto_data,u16 fractional);
 void TIM4_Init(u16 auto_data,u16 fractional);
 void TIM3_Int_Init(u16 arr,u16 psc);
+void TIM5_Init(u16 arr,u16 psc);
 void TIM14_PWM_Init(u32 arr,u32 psc);
 void TIM5_CH1_Cap_Init(u32 arr,u16 psc);
 void TIM9_CH2_PWM_Init(u16 arr,u16 psc);
