@@ -38,29 +38,15 @@
 
 __align(8) u8 USART1_TX_BUF[USART1_MAX_SEND_LEN];
 
-//u8 USART1_RX_BUF[USART1_MAX_RECV_LEN];
+vu16 USART1_RX_STA = 0;
 u8* USART1_RX_BUF = NULL;
-u8 U1_RX_ID = 0;// 0~3
-vu16 USART1_RX_STA[4] = {0};
 
-// Get free buf id for next use
-// >>> U1_RX_ID <<<
-// Not Busy:    0->1->0->1->0->1->... (always switch between 0 and 1)
-// little Busy: 0->1->2->0->1->0->1->... (may use till 2)
-// very Busy:   0->1->2->3->0->1->0->1->... (may use till 3)
-void USART1_Get_Free_Buf(void)
-{
-	u8 i = 0;
-	//U1_RX_ID = 0;
-	for (i=0; i<U1_RECV_BUF_CNT; i++) {
-		if ((USART1_RX_STA[i]&(1<<15)) == 0) {// first free Buf
-			U1_RX_ID = i;
-			memset(USART1_RX_BUF+U1_RECV_LEN_ONE*i, 0, U1_RECV_LEN_ONE);
-			//printf("switch to buf id = %d\n", i);
-			break;
-		}
-	}
-}
+u8* DW_RX_BUF = NULL;
+u8* AT_RX_BUF = NULL;
+u8* MOBIT_RX_BUF = NULL;
+
+u8 U1_MOBIT_RX_ID = 0;// 0~9
+u8 U1_AT_RX_ID = 0;// 0~9
 
 //初始化IO 串口1 
 //bound:波特率
@@ -108,13 +94,12 @@ void uart_init(u32 bound){
 	TIM7_Int_Init(1000-1,8400-1);	//10ms中断一次
 	
   TIM_Cmd(TIM7, DISABLE); //关闭定时器7
+
+	DW_RX_BUF = mymalloc(SRAMCCM, U1_RECV_LEN_ONE);
+	AT_RX_BUF = mymalloc(SRAMIN, U1_RX_LEN_ONE*U1_RX_BUF_CNT);
+	MOBIT_RX_BUF = mymalloc(SRAMCCM, U1_RX_LEN_ONE*U1_RX_BUF_CNT);
 	
-	USART1_RX_BUF = mymalloc(SRAMIN, USART1_MAX_RECV_LEN);
-	
-	USART1_RX_STA[0] = 0;
-	USART1_RX_STA[1] = 0;
-	USART1_RX_STA[2] = 0;
-	USART1_RX_STA[3] = 0;
+	USART1_RX_BUF = mymalloc(SRAMIN, U1_RECV_LEN_ONE);
 }
 
 void USART1_IRQHandler(void)
@@ -125,15 +110,15 @@ void USART1_IRQHandler(void)
 
 	if (USART_GetFlagStatus(USART1, USART_FLAG_RXNE) != RESET) {
 		res = USART_ReceiveData(USART1);
-		if ((USART1_RX_STA[U1_RX_ID]&(1<<15)) == 0) {// frame not complete
-			if (USART1_RX_STA[U1_RX_ID] < USART1_MAX_RECV_LEN) {
+		if ((USART1_RX_STA&(1<<15)) == 0) {// frame not complete
+			if (USART1_RX_STA < U1_RECV_LEN_ONE) {
 				TIM_SetCounter(TIM7, 0);
-				if (USART1_RX_STA[U1_RX_ID] == 0) {
+				if (USART1_RX_STA == 0) {
 					TIM_Cmd(TIM7, ENABLE);
 				}
-				USART1_RX_BUF[U1_RECV_LEN_ONE*U1_RX_ID + USART1_RX_STA[U1_RX_ID]++] = res;
-			} else {
-				USART1_RX_STA[U1_RX_ID] |= 1<<15;
+				USART1_RX_BUF[USART1_RX_STA++] = res;
+			} else {// buffer over flow
+				USART1_RX_STA |= 1<<15;
 			}
 		}
 	}

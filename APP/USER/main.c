@@ -71,7 +71,7 @@ extern u8 g_iap_update;
 extern u8 g_dw_write_enable;
 extern vu16 g_data_pos;
 extern vu16 g_data_size;
-extern u8 USART1_RX_BUF_BAK[U1_RECV_LEN_ONE];
+extern u8 USART1_RX_BUF_BAK[U1_RX_LEN_ONE];
 extern u32 os_jiffies;
 int g_mpu_sta = 0;
 
@@ -319,6 +319,12 @@ void lower_task(void *pdata)
 	}
 }
 
+extern vu16 MOBIT_RX_STA[U1_RX_BUF_CNT];
+
+extern vu16 DW_RX_STA;
+
+extern u8 U1_MOBIT_RX_PRO_ID;
+
 // MPU6050 Check and BT Data Parse
 void main_task(void *pdata)
 {
@@ -326,11 +332,16 @@ void main_task(void *pdata)
 	u8 loop_cnt = 0;
 
 	while(1) {
-		for (i=0; i<U1_RECV_BUF_CNT; i++) {
-			if (USART1_RX_STA[i]&0X8000) {
-				if (strstr((const char*)(USART1_RX_BUF+U1_RECV_LEN_ONE*i), PROTOCOL_HEAD)) {
-					sim7500e_mobit_process(i);
-				}
+		for (i=0; i<U1_RX_BUF_CNT; i++) {			
+			if (MOBIT_RX_STA[U1_MOBIT_RX_PRO_ID]&0X8000) {
+//				if (strstr((const char*)(MOBIT_RX_BUF+U1_RX_LEN_ONE*U1_MOBIT_RX_PRO_ID), PROTOCOL_HEAD)) {
+					sim7500e_mobit_process(U1_MOBIT_RX_PRO_ID);
+//				}
+
+					
+				MOBIT_RX_STA[U1_MOBIT_RX_PRO_ID] = 0;
+				// next index to process
+				U1_MOBIT_RX_PRO_ID = (U1_MOBIT_RX_PRO_ID+1)%U1_RX_BUF_CNT;
 			}
 		}
 
@@ -403,7 +414,7 @@ void usart_task(void *pdata)
 
 				if (0 == res) {
 					f_lseek(&f_txt, f_txt.fsize);
-					f_write(&f_txt, USART1_RX_BUF_BAK+g_data_pos, g_data_size, (UINT*)&br);
+					f_write(&f_txt, DW_RX_BUF+g_data_pos, g_data_size, (UINT*)&br);
 					f_close(&f_txt);
 				}
 			}

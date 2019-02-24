@@ -26,18 +26,21 @@
 //3,增加了USART_REC_LEN,用于定义串口最大允许接收的字节数(不大于2的14次方)
 //4,修改了EN_USART1_RX的使能方式
 ////////////////////////////////////////////////////////////////////////////////// 	
-#define U1_RECV_BUF_CNT		4
 #define U1_RECV_LEN_ONE		2560
 #define U1_DATA_LEN_ONE		2048
-#define USART1_MAX_RECV_LEN		(U1_RECV_LEN_ONE * U1_RECV_BUF_CNT)
 #define USART1_MAX_SEND_LEN		400
 #define USART1_RX_EN 			1
 
-//extern u8  USART1_RX_BUF[USART1_MAX_RECV_LEN];
-extern u8*  USART1_RX_BUF;
+#define U1_RX_BUF_CNT		5
+#define U1_RX_LEN_ONE		256
+
+extern u8* USART1_RX_BUF;
 extern u8  USART1_TX_BUF[USART1_MAX_SEND_LEN];
-extern vu16 USART1_RX_STA[4];
-extern u8 U1_RX_ID;// 0~3
+extern vu16 USART1_RX_STA;
+
+extern u8* DW_RX_BUF;
+extern u8* AT_RX_BUF;
+extern u8* MOBIT_RX_BUF;
 
 //如果想串口中断接收，请不要注释以下宏定义
 void uart_init(u32 bound);

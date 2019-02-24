@@ -30,7 +30,7 @@ u8 g_iap_update_url[LEN_DW_URL+1] = "";
 u8 g_mp3_update = 0;
 u8 g_mp3_update_md5[LEN_DW_MD5+1]   = "";
 u8 g_mp3_update_url[LEN_DW_URL+1]   = "";
-u8 g_mp3_update_name[LEN_FILE_NAME+1] = "";
+u8 g_mp3_update_name[LEN_FILE_NAME+1] = "test";
 
 u32 g_dw_recved_sum = 0;
 u32 g_dw_size_total = 0;
@@ -75,8 +75,7 @@ u32 g_iap_sta_flag = 0;
 u8 g_cgatt_sta = 0;
 u8 g_http_action_sta = 0;
 
-u8 USART1_RX_BUF_BAK[U1_RECV_LEN_ONE];
-u8 USART1_RX_BUF_BAK_MOBIT[U1_RECV_LEN_ONE];
+u8 USART1_RX_BUF_BAK[U1_RX_LEN_ONE];
 
 u32 os_jiffies = 0;// 100ms per
 
@@ -92,6 +91,16 @@ extern u8 g_calypso_serial_num[SERIAL_NUM_SIZE+1];
 extern OS_EVENT* sem_atsend;
 
 __sim7500dev sim7500dev;
+
+vu16 AT_RX_STA[U1_RX_BUF_CNT];
+
+
+u8 U1_AT_RX_PRO_ID = 0;// 0~3
+u8 U1_MOBIT_RX_PRO_ID = 0;// 0~3
+
+vu16 MOBIT_RX_STA[U1_RX_BUF_CNT];
+
+vu16 DW_RX_STA;
 
 const char* cmd_list[] = {
 	CMD_DEV_REGISTER,
@@ -180,13 +189,13 @@ u8 sim7500e_is_supported_cmd(u8 cnt, char* str)
 char* sim7500e_connect_check(u8 index)
 {
 	char *strx=0;
-	strx=strstr((const char*)(USART1_RX_BUF+U1_RECV_LEN_ONE*index),(const char*)"CONNECT OK");
+	strx=strstr((const char*)(AT_RX_BUF+U1_RX_LEN_ONE*index),(const char*)"CONNECT OK");
 	if (NULL == strx) {
-		strx=strstr((const char*)(USART1_RX_BUF+U1_RECV_LEN_ONE*index),(const char*)"ALREADY CONNECT");
+		strx=strstr((const char*)(AT_RX_BUF+U1_RX_LEN_ONE*index),(const char*)"ALREADY CONNECT");
 		if (NULL == strx) {
-			strx=strstr((const char*)(USART1_RX_BUF+U1_RECV_LEN_ONE*index),(const char*)"CONNECT FAIL");
+			strx=strstr((const char*)(AT_RX_BUF+U1_RX_LEN_ONE*index),(const char*)"CONNECT FAIL");
 			if (NULL == strx) {
-				strx=strstr((const char*)(USART1_RX_BUF+U1_RECV_LEN_ONE*index),(const char*)"ERROR");
+				strx=strstr((const char*)(AT_RX_BUF+U1_RX_LEN_ONE*index),(const char*)"ERROR");
 				if (strx != NULL) {
 					sim7500dev.tcp_status = 2;// Connect Failed/Error
 				} else {
@@ -205,19 +214,6 @@ char* sim7500e_connect_check(u8 index)
 	return strx;
 }
 
-u8 sim7500e_ipsta_check(u8 *sta)
-{
-	if (strstr((const char*)USART1_RX_BUF_BAK, "CLOSED")) {
-		*sta = 2;
-	}
-
-	if (strstr((const char*)USART1_RX_BUF_BAK, "CONNECT OK")) {
-		*sta = 1;
-	}
-	
-	return NULL;
-}
-
 u8 sim7500e_file_dw_check(void)
 {
 	u16 i = 0;
@@ -227,18 +223,18 @@ u8 sim7500e_file_dw_check(void)
 	u8 size_str[8] = "";
 
 	for (i=0; i<U1_RECV_LEN_ONE; i++) {
-		if ((':' == USART1_RX_BUF_BAK[i]) && (' ' == USART1_RX_BUF_BAK[i+1])) {
+		if ((':' == DW_RX_BUF[i]) && (' ' == DW_RX_BUF[i+1])) {
 			size_pos = i + 2;
 		}
 
 		if ((i >= size_pos) && (size_pos != 0)) {
-			if ((0x0D == USART1_RX_BUF_BAK[i]) && (0x0A == USART1_RX_BUF_BAK[i+1])) {
+			if ((0x0D == DW_RX_BUF[i]) && (0x0A == DW_RX_BUF[i+1])) {
 				data_pos = i + 2;
 				break;
 			}
 
 			if ((i-size_pos) < 8) {
-				size_str[i-size_pos] = USART1_RX_BUF_BAK[i];
+				size_str[i-size_pos] = DW_RX_BUF[i];
 			} else {
 				printf("DW size is too large = %s!\n", size_str);
 			}
@@ -384,21 +380,18 @@ u8* sim7500e_check_cmd(u8 *str, u8 index)
 	printf("ACK+++");
 	
 	for (i=0; i<10; i++) {
-		if (0 == USART1_RX_BUF[U1_RECV_LEN_ONE*index+i]) {
+		if (0 == AT_RX_BUF[U1_RX_LEN_ONE*index+i]) {
 			break;
 		}
-		printf("%c", USART1_RX_BUF[U1_RECV_LEN_ONE*index+i]);
+		printf("%c", AT_RX_BUF[U1_RX_LEN_ONE*index+i]);
 	}
 	printf("---ACK\n");
 #endif
 
-	// printf("SIM7000E-01 Recv Data %s\n", USART1_RX_BUF+U1_RECV_LEN_ONE*index);
-	// write_logs("SIM7000E", (char*)(USART1_RX_BUF+U1_RECV_LEN_ONE*index), USART1_RX_STA[index]&0X7FFF, 0);
-
 	// CONNECT's actual result ACK maybe recved 150sec later after "OK"
 	// very very long time wait, so must wait till recved CONNECT or ERROR
 	
-	if (strstr((const char*)(USART1_RX_BUF+U1_RECV_LEN_ONE*index), "CLOSED")) {
+	if (strstr((const char*)(AT_RX_BUF+U1_RX_LEN_ONE*index), "CLOSED")) {
 		sim7500dev.tcp_status = 2;
 	}
 
@@ -410,7 +403,7 @@ u8* sim7500e_check_cmd(u8 *str, u8 index)
 			strx = strstr((const char*)str, "OK");
 		}
 	} else {
-		strx = strstr((const char*)(USART1_RX_BUF+U1_RECV_LEN_ONE*index), (const char*)str);
+		strx = strstr((const char*)(AT_RX_BUF+U1_RX_LEN_ONE*index), (const char*)str);
 	}
 	
 	if (0 == strcmp((const char*)str, "SEND OK")) {
@@ -424,24 +417,22 @@ u8* sim7500e_check_cmd(u8 *str, u8 index)
 			} else {
 				g_cgatt_sta = 0;
 			}
+			
+			printf("g_cgatt_sta=%d\n", g_cgatt_sta);
 		}
 
 		if (0 == strncmp((const char*)strx, "+HTTPACTION: ", strlen("+HTTPACTION: "))) {
-			if (0 == strncmp((const char*)strx+sizeof("+HTTPACTION: ")-1, "0,200", strlen("0,200"))) {
-				g_http_action_sta = 1;
-			} else {
-				g_http_action_sta = 0;
+			if (strstr((const char*)strx, "+HTTPACTION: 0,200")) {
+				if (0 == g_http_action_sta) {
+					g_http_action_sta = 1;
+				}
+				printf("g_http_action_sta=%d\n", g_http_action_sta);
 			}
 		}
 	}
 	
-	// if use strcmp, when SEND OK + ^Mobit will lose one MSG
-	if (0 == strstr((const char*)(USART1_RX_BUF+U1_RECV_LEN_ONE*index), PROTOCOL_HEAD)) {// Do not process ^Mobit MSGs
-		// Already get "OK", next to get extra info(IMEI / GPS)
-		// Go on receiving other packages ASAP
-		memcpy(USART1_RX_BUF_BAK, USART1_RX_BUF+U1_RECV_LEN_ONE*index, U1_RECV_LEN_ONE);
-		USART1_RX_STA[index] = 0;
-	}
+	// for further parse info from acks
+	memcpy(USART1_RX_BUF_BAK, AT_RX_BUF+U1_RX_LEN_ONE*index, U1_RX_LEN_ONE);
 	
 	return (u8*)strx;
 }
@@ -449,17 +440,29 @@ u8* sim7500e_check_cmd(u8 *str, u8 index)
 void sim7500e_clear_recved_buf()
 {
 	u8 i = 0;
-
+	
 	// Clear All Previous Recved AT-ACK from SIM7000E Except MOBIT MSGs
-	for (i=0; i<U1_RECV_BUF_CNT; i++) {
-		if (USART1_RX_STA[i]&0X8000) {
-			if (!strstr((const char*)(USART1_RX_BUF+U1_RECV_LEN_ONE*i), "^MOBIT")) {
-				if (strstr((const char*)(USART1_RX_BUF+U1_RECV_LEN_ONE*i), "CLOSED")) {
+	for (i=0; i<U1_RX_BUF_CNT; i++) {
+		if (AT_RX_STA[U1_AT_RX_PRO_ID]&0X8000) {
+				if (strstr((const char*)(AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_PRO_ID), "CLOSED")) {
 					sim7500dev.tcp_status = 2;
 				}
-				
-				USART1_RX_STA[i] = 0;
-			}
+
+				if (strstr((const char*)(AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_PRO_ID), "+HTTPACTION: 0,200")) {
+					if (0 == g_http_action_sta) {
+						g_http_action_sta = 1;
+					}
+					printf("g_http_action_sta=%d\n", g_http_action_sta);
+					
+					if (0 == g_dw_size_total) {
+						g_dw_size_total = atoi((const char*)(AT_RX_BUF+21));
+						printf("g_dw_size_total = %d\n", g_dw_size_total);
+					}
+				}
+
+				AT_RX_STA[U1_AT_RX_PRO_ID] = 0;
+				// next index to process
+				U1_AT_RX_PRO_ID = (U1_AT_RX_PRO_ID+1)%U1_RX_BUF_CNT;
 		}
 	}
 }
@@ -473,14 +476,20 @@ u8 sim7500e_send_cmd(u8 *cmd, u8 *ack, u16 waittime)
 
 	OSSemPend(sem_atsend,0,&err);
 	
+	printf("SIM7000E Send Data %s\n", cmd);
+	
 	sim7500e_clear_recved_buf();
+
+	if (1 == g_http_action_sta) {
+		if (0 == strcmp((const char*)ack, "+HTTPACTION: ")) {
+			return 0;
+		}
+	}
 
 	// Setup TCP Connect
 	if (0 == strcmp((const char*)cmd, "AT+CIPSTART")) {
 		sim7500dev.tcp_status = 0;// Reset to IDLE
 	}
-	
-	printf("SIM7000E Send Data %s\n", cmd);
 
 	if (strstr((const char*)(cmd), PROTOCOL_HEAD)) {
 		write_logs("SIM7000E", (char*)cmd, strlen((char*)cmd), 1);
@@ -497,14 +506,21 @@ u8 sim7500e_send_cmd(u8 *cmd, u8 *ack, u16 waittime)
 		while (--waittime) {
 			// quick-ack only wait 10ms
 			delay_ms(10);
-			for (i=0; i<U1_RECV_BUF_CNT; i++) {
-				if (USART1_RX_STA[i]&0X8000) {
-					if (sim7500e_check_cmd(ack, i)) {
+			for (i=0; i<U1_RX_BUF_CNT; i++) {
+				if (AT_RX_STA[U1_AT_RX_PRO_ID]&0X8000) {
+					if (sim7500e_check_cmd(ack, U1_AT_RX_PRO_ID)) {
 						res = 0;
 						ret = 1;
-						break;
 					} else {
 						res = 1;
+					}
+
+					AT_RX_STA[U1_AT_RX_PRO_ID] = 0;
+					// next index to process
+					U1_AT_RX_PRO_ID = (U1_AT_RX_PRO_ID+1)%U1_RX_BUF_CNT;
+					
+					if (0 == res) {
+						break;
 					}
 				}
 			}
@@ -1201,7 +1217,8 @@ u8 sim7500e_setup_http(void)
 #endif
 
 	g_http_action_sta = 0;
-	
+	g_dw_size_total = 0;
+
 	time_start = os_jiffies;
 	for (i=0; i<250; i++) {
 		sim7500e_send_cmd("AT+HTTPACTION=0","+HTTPACTION: ",500);
@@ -1225,17 +1242,25 @@ u8 sim7500e_setup_http(void)
 			return 1;
 		}
 
-		delay_ms(1000);
+		delay_ms(5000);
+		
+		if (1 == g_http_action_sta) {
+			break;
+		}
 	}
 
-	g_dw_size_total = atoi((const char*)(USART1_RX_BUF_BAK+21));
-	printf("g_dw_size_total = %d\n", g_dw_size_total);
-	
+	if (0 == g_dw_size_total) {
+		g_dw_size_total = atoi((const char*)(USART1_RX_BUF_BAK+21));
+		printf("g_dw_size_total = %d\n", g_dw_size_total);
+	}
+
 	return 0;
 }
 
 void sim7500e_http_mp3()
 {
+	u8 try_cnt = 0;
+
 	if (g_mp3_update != 0) {
 		u16 split_size = 0;
 
@@ -1273,10 +1298,18 @@ void sim7500e_http_mp3()
 			}
 
 			sprintf(send_buf, "AT+HTTPREAD=%d,%d", g_dw_recved_sum, split_size);
-			if (0 == sim7500e_send_cmd((u8*)send_buf,"+HTTPREAD",500)) {
-				if (sim7500e_file_dw_check()) {
+			sim7500e_send_cmd((u8*)send_buf,NULL,500);
+			
+			while (0 == DW_RX_STA) {
+				if (try_cnt >= 100) {// 5s
 					return;
 				}
+				delay_ms(50);
+				try_cnt++;
+			}
+
+			if (sim7500e_file_dw_check()) {
+					return;
 			}
 
 			printf("g_dw_recved_sum = %d\n", g_dw_recved_sum);
@@ -1296,6 +1329,8 @@ void sim7500e_http_mp3()
 
 void sim7500e_http_iap()
 {
+	u8 try_cnt = 0;
+
 	if (g_iap_update != 0) {
 		u16 split_size = 0;
 
@@ -1325,10 +1360,18 @@ void sim7500e_http_iap()
 			}
 
 			sprintf(send_buf, "AT+HTTPREAD=%d,%d", g_dw_recved_sum, split_size);
-			if (0 == sim7500e_send_cmd((u8*)send_buf,"+HTTPREAD",500)) {
-				if (sim7500e_file_dw_check()) {
+			sim7500e_send_cmd((u8*)send_buf,NULL,500);
+			
+			while (0 == DW_RX_STA) {
+				if (try_cnt >= 100) {// 5s
 					return;
 				}
+				delay_ms(50);
+				try_cnt++;
+			}
+
+			if (sim7500e_file_dw_check()) {
+					return;
 			}
 
 			printf("g_dw_recved_sum = %d\n", g_dw_recved_sum);
@@ -1394,37 +1437,23 @@ void sim7500e_mobit_process(u8 index)
 	u8 *pTemp = NULL;
 	u8 data_lenth = 0;
 
-	// printf("SIM7000E-03 Recv Data %s\n", USART1_RX_BUF+U1_RECV_LEN_ONE*index);
-	// write_logs("SIM7000E", (char*)(USART1_RX_BUF+U1_RECV_LEN_ONE*index), USART1_RX_STA[index]&0X7FFF, 0);
-			
-	//if (g_hbeaterrcnt) {
-	//	if (strstr((const char*)(USART1_RX_BUF+U1_RECV_LEN_ONE*index), "SEND OK")) {
-	//		g_hbeaterrcnt = 0;
-	//	}
-	//}
-			
 	// Received User Data
-	pTemp = (u8*)strstr((const char*)(USART1_RX_BUF+U1_RECV_LEN_ONE*index), PROTOCOL_HEAD);
+	pTemp = (u8*)strstr((const char*)(MOBIT_RX_BUF+U1_RX_LEN_ONE*index), PROTOCOL_HEAD);
 	if (pTemp) {
 		u16 i = 0;
 		data_lenth = strlen((const char*)pTemp);
-				
-		memset(USART1_RX_BUF_BAK_MOBIT, 0, U1_RECV_LEN_ONE);
-		memcpy(USART1_RX_BUF_BAK_MOBIT, pTemp, data_lenth);
 
-		printf("RECVED1 MSG(%dB): %s\n", data_lenth, USART1_RX_BUF_BAK_MOBIT);
-		write_logs("SIM7000E", (char*)(USART1_RX_BUF_BAK_MOBIT), data_lenth, 0);
+		printf("RECVED1 MSG(%dB): %s\n", data_lenth, pTemp);
+		write_logs("SIM7000E", (char*)(pTemp), data_lenth, 0);
 		
 		for (i=0; i<data_lenth; i++) {
-			if ('$' == USART1_RX_BUF_BAK_MOBIT[i]) {
-				USART1_RX_BUF_BAK_MOBIT[i] = 0;
+			if ('$' == pTemp[i]) {
+				pTemp[i] = 0;
 			}
 		}
 
-		sim7500e_parse_msg((char*)USART1_RX_BUF_BAK_MOBIT);
+		sim7500e_parse_msg((char*)pTemp);
 	}
-	
-	USART1_RX_STA[index] = 0;// Go on receiving other packages ASAP
 }
 
 void sim7500e_mobit_msg_ack(void)
@@ -1503,7 +1532,9 @@ void sim7500e_communication_loop(u8 mode,u8* ipaddr,u8* port)
 	}
 
 #if 1// DEBUG
-	sim7500e_setup_http();
+	g_mp3_update = 1;
+	//sim7500e_setup_http();
+	sim7500e_http_mp3();
 #endif
 
 	RTC_GetTime(RTC_Format_BIN, &RTC_TimeStruct_old);

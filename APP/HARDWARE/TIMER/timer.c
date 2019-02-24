@@ -8,6 +8,17 @@
 
 extern u32 os_jiffies;
 
+extern vu16 MOBIT_RX_STA[U1_RX_BUF_CNT];
+
+extern vu16 AT_RX_STA[U1_RX_BUF_CNT];
+
+extern vu16 DW_RX_STA;
+
+extern u8 U1_AT_RX_ID;// 0~9
+extern u8 U1_MOBIT_RX_ID;// 0~9
+
+extern vu16 USART1_RX_STA;
+
 void write_logs(char *module, char *log, u16 size, u8 mode);
 void hc08_msg_process(u8 *data, u16 num);
 void hc08_debug_process(u8 *data, u16 num);
@@ -400,54 +411,59 @@ void TIM6_Int_Init(u16 arr,u16 psc)
 	NVIC_InitStructure.NVIC_IRQChannelCmd=ENABLE;
 	NVIC_Init(&NVIC_InitStructure); 									 
 }
-extern u8 U1_RX_ID;// 0~3
-extern vu16 USART1_RX_STA[4];
-extern void USART1_Get_Free_Buf(void);
+
 void TIM7_IRQHandler(void)
 { 	
 	u8 i = 0;
+	char *str = NULL;
 	u8 is_dw_dat = 0;
 	
 	OSIntEnter();    		    
 	if(TIM_GetITStatus(TIM7,TIM_IT_Update)==SET)
 	{	 			   
-		if (USART1_RX_STA[U1_RX_ID] != 0) {
-			USART1_RX_STA[U1_RX_ID] |= 1<<15;
-			USART1_RX_BUF[U1_RECV_LEN_ONE*U1_RX_ID + USART1_RX_STA[U1_RX_ID]&0X7FFF] = 0;
+		if (USART1_RX_STA > 2) {
+			USART1_RX_STA |= 1<<15;
+			USART1_RX_BUF[USART1_RX_STA&0X7FFF] = 0;
 			
-#if 1
-			if (strstr((const char*)(USART1_RX_BUF+U1_RECV_LEN_ONE*U1_RX_ID), (const char*)"+HTTPREAD")) {
+			if ((str = strstr((const char*)USART1_RX_BUF, (const char*)"+HTTPREAD"))) {
 				is_dw_dat = 1;
+				DW_RX_STA = USART1_RX_STA;
+				memcpy(DW_RX_BUF, USART1_RX_BUF, USART1_RX_STA&0X7FFF+1);
+			} else if ((str = strstr((const char*)USART1_RX_BUF, (const char*)"^MOBIT"))) {
+				MOBIT_RX_STA[U1_MOBIT_RX_ID] = USART1_RX_STA;
+				memcpy(MOBIT_RX_BUF+U1_RX_LEN_ONE*U1_MOBIT_RX_ID, USART1_RX_BUF, USART1_RX_STA&0X7FFF+1);
+
+				// next index for use
+				U1_MOBIT_RX_ID = (U1_MOBIT_RX_ID+1)%U1_RX_BUF_CNT;
+			} else {
+				AT_RX_STA[U1_AT_RX_ID] = USART1_RX_STA;
+				memcpy(AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID, USART1_RX_BUF, USART1_RX_STA&0X7FFF+1);
+
+				// next index for use
+				U1_AT_RX_ID = (U1_AT_RX_ID+1)%U1_RX_BUF_CNT;
 			}
 
-			printf("+++SIM7K RECVED(Buf%d - %dB):", U1_RX_ID, USART1_RX_STA[U1_RX_ID]&0X7FFF);
+#if 1
+			printf("+++SIM7K RECVED %dB:", USART1_RX_STA&0X7FFF);
 				
 			for (i=0; i<64; i++) {
-				if (0 == USART1_RX_BUF[U1_RECV_LEN_ONE*U1_RX_ID+i]) {
+				if (0 == USART1_RX_BUF[i]) {
 					break;
 				}
 				
 				if (1 == is_dw_dat) {
-					if ((0x0D==USART1_RX_BUF[U1_RECV_LEN_ONE*U1_RX_ID+i]) && (USART1_RX_BUF[U1_RECV_LEN_ONE*U1_RX_ID+i+2]!='+')) {
+					if ((0x0D==USART1_RX_BUF[i]) && (USART1_RX_BUF[i+2]!='+')) {
 						break;
 					}
 				}
 				
-				printf("%c", USART1_RX_BUF[U1_RECV_LEN_ONE*U1_RX_ID+i]);
+				printf("%c", USART1_RX_BUF[i]);
 			}
 			printf("---\n");
 #endif
-	
-			//printf("SIM7K RECVED(%dB)\n", USART1_RX_STA[U1_RX_ID]&0X7FFF);
-			//printf("SIM7K RECVED(%dB): %s\n", USART1_RX_STA[U1_RX_ID]&0X7FFF, USART1_RX_BUF+U1_RECV_LEN_ONE*U1_RX_ID);
-			//printf("SIM7000E Recv Data %s\n", USART1_RX_BUF+U1_RECV_LEN_ONE*U1_RX_ID);
-			//write_logs("SIM7000E", (char*)USART1_RX_BUF+U1_RECV_LEN_ONE*U1_RX_ID, USART1_RX_STA[U1_RX_ID]&0X7FFF, 0);
-
-			// Not Busy:    0->1->0->1->0->1->... (always switch between 0 and 1)
-			// little Busy: 0->1->2->0->1->0->1->... (may use till 2)
-			// very Busy:   0->1->2->3->0->1->0->1->... (may use till 3)
-			USART1_Get_Free_Buf();// Get first free buf id for next use
 		}
+
+		USART1_RX_STA = 0;
 
 		TIM_ClearITPendingBit(TIM7,TIM_IT_Update);
 		TIM_Cmd(TIM7,DISABLE);

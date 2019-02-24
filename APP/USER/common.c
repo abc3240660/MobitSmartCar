@@ -264,7 +264,6 @@ int write_bin_sd2spi(void)
 {
 	u8 i = 0;
 	FRESULT fr;
-	FATFS fs;
 	FIL fp;
 	u32 br = 0;
 	u32 once = 0;
