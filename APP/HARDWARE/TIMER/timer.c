@@ -428,16 +428,16 @@ void TIM7_IRQHandler(void)
 			if ((str = strstr((const char*)USART1_RX_BUF, (const char*)"+HTTPREAD"))) {
 				is_dw_dat = 1;
 				DW_RX_STA = USART1_RX_STA;
-				memcpy(DW_RX_BUF, USART1_RX_BUF, USART1_RX_STA&0X7FFF+1);
+				memcpy(DW_RX_BUF, USART1_RX_BUF, (USART1_RX_STA&0X7FFF)+1);
 			} else if ((str = strstr((const char*)USART1_RX_BUF, (const char*)"^MOBIT"))) {
 				MOBIT_RX_STA[U1_MOBIT_RX_ID] = USART1_RX_STA;
-				memcpy(MOBIT_RX_BUF+U1_RX_LEN_ONE*U1_MOBIT_RX_ID, USART1_RX_BUF, USART1_RX_STA&0X7FFF+1);
+				memcpy(MOBIT_RX_BUF+U1_RX_LEN_ONE*U1_MOBIT_RX_ID, USART1_RX_BUF, (USART1_RX_STA&0X7FFF)+1);
 
 				// next index for use
 				U1_MOBIT_RX_ID = (U1_MOBIT_RX_ID+1)%U1_RX_BUF_CNT;
 			} else {
 				AT_RX_STA[U1_AT_RX_ID] = USART1_RX_STA;
-				memcpy(AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID, USART1_RX_BUF, USART1_RX_STA&0X7FFF+1);
+				memcpy(AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID, USART1_RX_BUF, (USART1_RX_STA&0X7FFF)+1);
 
 				// next index for use
 				U1_AT_RX_ID = (U1_AT_RX_ID+1)%U1_RX_BUF_CNT;

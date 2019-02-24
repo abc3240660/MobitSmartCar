@@ -455,7 +455,7 @@ void sim7500e_clear_recved_buf()
 					printf("g_http_action_sta=%d\n", g_http_action_sta);
 					
 					if (0 == g_dw_size_total) {
-						g_dw_size_total = atoi((const char*)(AT_RX_BUF+21));
+						g_dw_size_total = atoi((const char*)(AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_PRO_ID+21));
 						printf("g_dw_size_total = %d\n", g_dw_size_total);
 					}
 				}

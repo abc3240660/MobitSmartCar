@@ -100,6 +100,20 @@ void uart_init(u32 bound){
 	MOBIT_RX_BUF = mymalloc(SRAMCCM, U1_RX_LEN_ONE*U1_RX_BUF_CNT);
 	
 	USART1_RX_BUF = mymalloc(SRAMIN, U1_RECV_LEN_ONE);
+	
+	{
+		u16 i = 0;
+		
+		for (i=0; i<U1_RECV_LEN_ONE; i++) {
+			USART1_RX_BUF[i] = 0x55;
+		}
+		
+		memcpy(DW_RX_BUF, USART1_RX_BUF, U1_RECV_LEN_ONE);
+		memcpy(AT_RX_BUF, USART1_RX_BUF, U1_RX_LEN_ONE*U1_RX_BUF_CNT);
+		memcpy(MOBIT_RX_BUF, USART1_RX_BUF, U1_RX_LEN_ONE*U1_RX_BUF_CNT);
+		
+		i = 0;
+	}
 }
 
 void USART1_IRQHandler(void)
