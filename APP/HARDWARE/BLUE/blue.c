@@ -9,6 +9,7 @@
 #include "can1.h"
 #include "common.h"
 #include <stdlib.h>
+#include "delay.h"
 
 #define HC08_SET_APN "SET APN="
 #define HC08_SET_IP "SET IP="
@@ -18,6 +19,7 @@
 #define HC08_SET_BACKUP "SET BACKUP"// Trigger backup from RUN into BAKOK sector
 #define HC08_SET_RESTORE "SET RESTORE"// Trigger restore from BAKOK into RUN sector
 #define HC08_SET_TIME "SET TIME="
+#define HC08_SET_PEPS "SET PEPS="
 
 extern u8 g_mac_addr[32];
 extern u8 g_svr_ip[32];
@@ -263,12 +265,36 @@ void ack_get_key(u8 is_pw_ok)
 
 void hc08_debug_process(u8 *data, u16 num)
 {
+    u8 test_mode = 0;
+
 	if (0 == strncmp((const char*)data, HC08_SET_IP, strlen(HC08_SET_IP))) {
 		memset(g_svr_ip, 0, 32);
 		strncpy((char*)g_svr_ip, (const char*)(data+strlen(HC08_SET_IP)), 32);
 	} else if (0 == strncmp((const char*)data, HC08_SET_PORT, strlen(HC08_SET_PORT))) {
 		memset(g_svr_port, 0, 8);
 		strncpy((char*)g_svr_port, (const char*)(data+strlen(HC08_SET_PORT)), 8);
+	} else if (0 == strncmp((const char*)data, HC08_SET_PEPS, strlen(HC08_SET_PEPS))) {
+        test_mode = atoi((const char*)(data+strlen(HC08_SET_PEPS)));
+        if (0 == test_mode) {
+            CAN1_JumpLamp(5);
+        } else if (1 == test_mode) {
+            CAN1_RingAlarm(5);
+        } else if (2 == test_mode) {
+            CAN1_StartEngine();
+        } else if (3 == test_mode) {
+            CAN1_StopEngine();
+        } else if (4 == test_mode) {
+            CAN1_OpenDoor();
+        } else if (5 == test_mode) {
+            CAN1_CloseDoor();
+        } else if (6 == test_mode) {
+            CAN1_OneKeyStart();
+        } else {
+            CAN1_JumpLamp(5);
+            CAN1_JumpLamp(5);
+            CAN1_JumpLamp(5);
+            CAN1_JumpLamp(5);
+        }
 	} else if (0 == strncmp((const char*)data, HC08_SET_APN, strlen(HC08_SET_APN))) {
 		SYS_ENV sys_env;
 		
