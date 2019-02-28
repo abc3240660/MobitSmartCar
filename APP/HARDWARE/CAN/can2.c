@@ -2,9 +2,10 @@
 #include "led.h"
 #include "common.h"
 
-extern u8 g_bms_temp_max;// 30
-extern u8 g_bms_temp_min;// 30
-extern u8 g_bms_battery_vol;// 50%
+extern u16 g_bms_vot;
+extern u16 g_bms_percent;
+extern u16 g_bms_temp_max;
+extern u16 g_bms_temp_min;
 extern u16 g_bms_charged_times;// Save into ExFlash
 
 // BIT7: 0-idle, 1-changed
@@ -154,28 +155,35 @@ u8 CAN2_Receive_Msg(u8 *buf)
 			if (0x02 == (RxMessage.Data[0]&0x2)) {// battery charging
 				if (0 == g_bms_charge_sta_chged) {
 					g_bms_charge_sta_chged = 1;
-					printf("bms = 0\n");
+					printf("bms charge sta = 0\n");
 					g_bms_charged_times++;
 					sys_env_init();
+
+                    g_bms_charge_sta_chged |= 0x80;
 				}
 			} else {
 				if (1 == g_bms_charge_sta_chged) {
 					g_bms_charge_sta_chged = 0;
-					printf("bms = 1\n");
+					printf("bms charge sta = 0\n");
+                    g_bms_charge_sta_chged |= 0x80;
 				}
 			}
 			
-			g_bms_charge_sta_chged |= 0x80;
-			g_bms_battery_vol = RxMessage.Data[1];
-			printf("g_bms_battery_vol = %d\n", g_bms_battery_vol);
-			
-			test_cnt_bms++;
+			g_bms_percent = RxMessage.Data[1];
+            g_bms_vot = (RxMessage.Data[5]<<8 + RxMessage.Data[4]) / 10;
 
-			if (test_cnt_bms > 25) {
-					memset(log_msg_bms, 0, 64);
-					sprintf(log_msg_bms, "RECV: %.8X - %.2X%.2X%.2X%.2X%.2X%.2X%.2X%.2X", RxMessage.ExtId, RxMessage.Data[0], RxMessage.Data[1], RxMessage.Data[2], RxMessage.Data[3], RxMessage.Data[4], RxMessage.Data[5], RxMessage.Data[6], RxMessage.Data[7]);
-					write_logs("CAN2", (char*)log_msg_bms, strlen((char*)log_msg_bms), 2);
-					test_cnt_bms = 0;
+            test_cnt_bms++;
+
+            if ((test_cnt_bms>25) || (g_bms_charge_sta_chged&0x80)) {
+                test_cnt_bms = 0;
+
+                printf("bms percent = %d, vot = %d(L%d)\n", g_bms_percent, g_bms_vot, RxMessage.Data[4]);
+
+                memset(log_msg_bms, 0, 64);
+                sprintf(log_msg_bms, "RECV: %.8X - %.2X%.2X%.2X%.2X%.2X%.2X%.2X%.2X", RxMessage.ExtId, RxMessage.Data[0], RxMessage.Data[1], RxMessage.Data[2], RxMessage.Data[3], RxMessage.Data[4], RxMessage.Data[5], RxMessage.Data[6], RxMessage.Data[7]);
+
+                printf("CAN2 %s\n", log_msg_bms);
+                write_logs("CAN2", (char*)log_msg_bms, strlen((char*)log_msg_bms), 2);
 			}
 		} else if (0x18FE28F4 == RxMessage.ExtId) {
 			g_bms_temp_max = RxMessage.Data[4];
@@ -188,14 +196,6 @@ u8 CAN2_Receive_Msg(u8 *buf)
 			} 
 		}
 
-		if (0 == (test_cnt_bms%20)) {
-			LED_N = !LED_N;
-		}
-	return RxMessage.DLC;	
+	return RxMessage.DLC;
 }
-
-
-
-
-
 

@@ -24,6 +24,11 @@
 __align(8) static OS_STK START_TASK_STK[START_STK_SIZE];
 void start_task(void *pdata);
 
+#define TIMER_TASK_PRIO                  9
+#define TIMER_STK_SIZE                   1024
+__align(8) static OS_STK TIMER_TASK_STK[TIMER_STK_SIZE];
+void timer_task(void *pdata);
+
 #define LOWER_TASK_PRIO                 8
 #define LOWER_STK_SIZE                  1024
 __align(8) static OS_STK LOWER_TASK_STK[LOWER_STK_SIZE];
@@ -75,11 +80,44 @@ extern u8 USART1_RX_BUF_BAK[U1_RX_LEN_ONE];
 extern u32 os_jiffies;
 int g_mpu_sta = 0;
 
+extern u8 g_gps_active;
+extern u16 g_gps_trace_gap;
+extern u32 g_time_start_gps;
+
+extern u8 g_hbeat_active;
+extern u8 g_hbeat_gap;// default 6s
+extern u32 g_time_start_hbeat;
+
+extern u8 g_hbrake_sta_chged;
+
 extern void sim7500e_mobit_process(u8 index);
 void create_logfile(void);
 void write_logs(char *module, char *log, u16 size, u8 mode);
 
 //////////////////////////////////////////////////////////////////////////////
+
+u8 is_jiffies_timeout(u32 time_start, u16 delayms)
+{
+    if (0 == delay_ms) {
+        return 0;
+    }
+
+    if (delay_ms < 100) {
+        delay_ms = 100;
+    }
+
+    if (os_jiffies >= time_start) {
+        if ((os_jiffies-time_start) > (delayms/100)) {
+            return 1;
+        }
+    } else {
+        if ((10000-time_start+os_jiffies) > (delayms/100)) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
 
 void do_sd_check()
 {
@@ -258,6 +296,7 @@ void start_task(void *pdata)
 	OS_ENTER_CRITICAL();
 	OSTaskCreate(main_task,(void *)0,(OS_STK*)&MAIN_TASK_STK[MAIN_STK_SIZE-1],MAIN_TASK_PRIO);
 	OSTaskCreate(usart_task,(void *)0,(OS_STK*)&USART_TASK_STK[USART_STK_SIZE-1],USART_TASK_PRIO);
+	OSTaskCreate(timer_task,(void *)0,(OS_STK*)&TIMER_TASK_STK[TIMER_STK_SIZE-1],TIMER_TASK_PRIO);
 	OSTaskCreate(higher_task,(void *)0,(OS_STK*)&HIGHER_TASK_STK[HIGHER_STK_SIZE-1],HIGHER_TASK_PRIO);
 	OSTaskCreate(lower_task,(void *)0,(OS_STK*)&LOWER_TASK_STK[LOWER_STK_SIZE-1],LOWER_TASK_PRIO);
 	OSTaskSuspend(START_TASK_PRIO);
@@ -309,10 +348,16 @@ void lower_task(void *pdata)
 
 		MPU6050_Risk_Check();
 
-		if (0 == KEY_HAND_BRAKE) {// La
-			g_mp3_play = 0;
-		} else {// Fang
-			g_mp3_play = 0;
+		if (0 == KEY_HAND_BRAKE) {// Locked
+			if (1 == (g_hbrake_sta_chged&0x7F)) {
+				g_hbrake_sta_chged = 0;
+                g_hbrake_sta_chged |= 0x80;
+			}
+		} else {// Unlocked
+			if (0 == (g_hbrake_sta_chged&0x7F)) {
+				g_hbrake_sta_chged = 1;
+                g_hbrake_sta_chged |= 0x80;
+			}
 		}
 		
     OSTimeDlyHMSM(0,0,0,500);// 500ms
@@ -364,6 +409,25 @@ void main_task(void *pdata)
 
 		OSTimeDlyHMSM(0,0,0,100);// 500ms
 	}
+}
+
+void timer_task(void *pdata)
+{
+    while (1) {
+        if (g_gps_trace_gap) {
+            if (is_jiffies_timeout(g_time_start_gps, (g_gps_trace_gap*1000))) {
+                g_gps_active = 1;
+                g_time_start_gps = os_jiffies;
+            }
+        }
+
+        if (is_jiffies_timeout(g_time_start_hbeat, (g_hbeat_gap*1000))) {
+            g_hbeat_active = 1;
+            g_time_start_hbeat = os_jiffies;
+        }
+
+        OSTimeDlyHMSM(0,0,0,100);// 50ms
+    }
 }
 
 void usart_task(void *pdata)

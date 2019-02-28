@@ -27,6 +27,10 @@ extern __sim7500dev sim7500dev;
 #define CMD_IAP_SUCCESS		"U1"// DEV Host
 #define CMD_CHARGE_STARTED	"B1"// DEV Host
 #define CMD_CHARGE_STOPED	"B3"// DEV Host
+#define CMD_DOOR_OPENED 	"C7"// DEV Host
+#define CMD_DOOR_CLOSED 	"C9"// DEV Host
+#define CMD_BRAKE_LOCKED	"B5"// DEV Host
+#define CMD_BRAKE_UNLOCKED	"B7"// DEV Host
 
 // F407 Recv from Server and Action / ACK
 #define CMD_QUERY_PARAMS	"C0"// DEV ACK
@@ -44,7 +48,7 @@ extern __sim7500dev sim7500dev;
 #define CMD_QUERY_BMS   	"B0"// DEV ACK
 #define CMD_QUERY_MP3   	"P2"// DEV ACK
 #define CMD_QUERY_CAR   	"C4"// DEV ACK
-#define CMD_ENGINE_STOP   	"C6"// DEV ACK
+#define CMD_LOCK_DOOR   	"C6"// DEV ACK
 
 #define LEN_SYS_TIME    32
 #define LEN_IMEI_NO     32
@@ -96,7 +100,11 @@ enum CMD_TYPE {
 	QUERY_BMS,
 	QUERY_MP3,
 	QUERY_CAR,
-	ENGINE_STOP,
+	LOCK_DOOR,
+	DOOR_OPENED,
+	DOOR_CLOSED,
+	BRAKE_LOCKED,
+	BRAKE_UNLOCKED,
 	UNKNOWN_CMD
 };
  
