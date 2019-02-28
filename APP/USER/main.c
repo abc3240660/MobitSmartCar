@@ -98,12 +98,12 @@ void write_logs(char *module, char *log, u16 size, u8 mode);
 
 u8 is_jiffies_timeout(u32 time_start, u16 delayms)
 {
-    if (0 == delay_ms) {
+    if (0 == delayms) {
         return 0;
     }
 
-    if (delay_ms < 100) {
-        delay_ms = 100;
+    if (delayms < 100) {
+        delayms = 100;
     }
 
     if (os_jiffies >= time_start) {

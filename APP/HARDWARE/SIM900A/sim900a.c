@@ -239,7 +239,7 @@ char* sim7500e_connect_check(u8 index)
 u8 sim7500e_file_dw_check(void)
 {
     u16 i = 0;
-    u18 try_cnt = 0;
+    u16 try_cnt = 0;
     u16 size_pos = 0;
     u16 data_pos = 0;
     u8 size_str[8] = "";
@@ -283,7 +283,7 @@ u8 sim7500e_file_dw_check(void)
         delay_ms(50);
     }
 
-    g_dw_recved_sum += size;
+    g_dw_recved_sum += g_data_size;
 
     return 0;
 }
@@ -1602,66 +1602,6 @@ void sim7500e_mobit_process(u8 index)
 		}
 
 		sim7500e_parse_msg((char*)pTemp);
-	}
-}
-
-void sim7500e_mobit_msg_ack(void)
-{
-	// Two Path to Control SIM700E
-	// 1: sim7500e_communication_loop
-	// 2: sim7500e_mobit_process
-	// Must Be Careful!!!
-	// If ACK Confused, Please Move AT-Send from sim7500e_mobit_process into here
-	// Warning: send_buf will be used in two place!!!
-
-	// CMD_QUERY_PARAMS,
-	if (g_need_ack & (1<<QUERY_PARAMS)) {
-		g_need_ack &= ~(1<<QUERY_PARAMS);
-	// CMD_RING_ALARM,
-	} else if (g_need_ack & (1<<RING_ALARM)) {
-		g_need_ack &= ~(1<<RING_ALARM);
-	// CMD_UNLOCK_DOOR,
-	} else if (g_need_ack & (1<<UNLOCK_DOOR)) {
-		g_need_ack &= ~(1<<UNLOCK_DOOR);
-	// CMD_JUMP_LAMP,
-	} else if (g_need_ack & (1<<JUMP_LAMP)) {
-		g_need_ack &= ~(1<<JUMP_LAMP);
-	// CMD_ENGINE_START,
-	} else if (g_need_ack & (1<<ENGINE_START)) {
-		g_need_ack &= ~(1<<ENGINE_START);
-	// CMD_DEV_SHUTDOWN,
-	} else if (g_need_ack & (1<<DEV_SHUTDOWN)) {
-		g_need_ack &= ~(1<<DEV_SHUTDOWN);
-	// CMD_QUERY_GPS,
-	} else if (g_need_ack & (1<<QUERY_GPS)) {
-		g_need_ack &= ~(1<<QUERY_GPS);
-	// CMD_IAP_UPGRADE,
-	} else if (g_need_ack & (1<<IAP_UPGRADE)) {
-		g_need_ack &= ~(1<<IAP_UPGRADE);
-	// CMD_MP3_UPDATE,	
-	} else if (g_need_ack & (1<<MP3_UPDATE)) {
-		g_need_ack &= ~(1<<MP3_UPDATE);
-	// CMD_MP3_PLAY,
-	} else if (g_need_ack & (1<<MP3_PLAY)) {
-		g_need_ack &= ~(1<<MP3_PLAY);
-	// CMD_START_TRACE,
-	} else if (g_need_ack & (1<<START_TRACE)) {
-		g_need_ack &= ~(1<<START_TRACE);
-	// CMD_STOP_TRACE,
-	} else if (g_need_ack & (1<<STOP_TRACE)) {
-		g_need_ack &= ~(1<<STOP_TRACE);
-	// CMD_QUERY_BMS,
-	} else if (g_need_ack & (1<<QUERY_BMS)) {
-		g_need_ack &= ~(1<<QUERY_BMS);
-	// CMD_QUERY_MP3,
-	} else if (g_need_ack & (1<<QUERY_MP3)) {
-		g_need_ack &= ~(1<<QUERY_MP3);
-	// CMD_QUERY_CAR,
-	} else if (g_need_ack & (1<<QUERY_CAR)) {
-		g_need_ack &= ~(1<<QUERY_CAR);
-	// CMD_LOCK_DOOR,
-	} else if (g_need_ack & (1<<LOCK_DOOR)) {
-		g_need_ack &= ~(1<<LOCK_DOOR);
 	}
 }
 

@@ -12,6 +12,7 @@ extern u8 g_door_state;
 extern u8 g_power_state;
 extern u32 g_trip_meters;
 extern u8 g_drlock_sta_chged;
+extern u8 g_dropen_sta_chged;
 
 void write_logs(char *module, char *log, u16 size, u8 mode);
 /****************************************************************************
@@ -164,8 +165,7 @@ u8 CAN1_Send_Msg(u8* msg,u8 len)
 * 说    明：       
 ****************************************************************************/	
 u8 CAN1_Receive_Msg(u8 *buf)
-{		   		   
- 	u32 i;
+{
 	CanRxMsg RxMessage;
     if( CAN_MessagePending(CAN1,CAN_FIFO0)==0)return 0;		//没有接收到数据,直接退出 
     CAN_Receive(CAN1, CAN_FIFO0, &RxMessage);//读取数据	
