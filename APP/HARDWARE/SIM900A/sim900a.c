@@ -1642,9 +1642,9 @@ void sim7500e_communication_loop(u8 mode,u8* ipaddr,u8* port)
             }
         }
 
-        if (0 == (timex%500)) {
+        if (0 == (timex%20)) {
             LED_G = !LED_G;
-            printf("main_loop test\n");
+            // printf("main_loop test\n");
         }
 
         timex++;
