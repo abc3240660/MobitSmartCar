@@ -113,14 +113,14 @@ void debug_process(void)
             CAN1_CloseDoor();
         } else if (6 == test_mode) {
         } else if (7 == test_mode) {
-            CAN1_JumpLamp(5);
-            CAN1_JumpLamp(5);
-            CAN1_JumpLamp(5);
+            CAN1_JumpLamp(0);
+            CAN1_JumpLamp(0);
+            CAN1_JumpLamp(0);
             CAN1_JumpLamp(5);
         } else if (8 == test_mode) {
-            CAN1_RingAlarm(5);
-            CAN1_RingAlarm(5);
-            CAN1_RingAlarm(5);
+            CAN1_RingAlarm(0);
+            CAN1_RingAlarm(0);
+            CAN1_RingAlarm(0);
             CAN1_RingAlarm(5);
         } else {
         }
