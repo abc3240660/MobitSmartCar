@@ -281,14 +281,35 @@ void hc08_debug_process(u8 *data, u16 num)
             CAN1_RingAlarm(5);
         } else if (2 == test_mode) {
             CAN1_StartEngine();
+            CAN1_StartEngine();
+            CAN1_StartEngine();
+            CAN1_StartEngine();
         } else if (3 == test_mode) {
+            CAN1_StopEngine();
+            CAN1_StopEngine();
+            CAN1_StopEngine();
             CAN1_StopEngine();
         } else if (4 == test_mode) {
             CAN1_OpenDoor();
+            CAN1_OpenDoor();
+            CAN1_OpenDoor();
+            CAN1_OpenDoor();
         } else if (5 == test_mode) {
             CAN1_CloseDoor();
+            CAN1_CloseDoor();
+            CAN1_CloseDoor();
+            CAN1_CloseDoor();
         } else if (6 == test_mode) {
-            CAN1_OneKeyStart();
+        } else if (7 == test_mode) {
+            CAN1_JumpLamp(5);
+            CAN1_JumpLamp(5);
+            CAN1_JumpLamp(5);
+            CAN1_JumpLamp(5);
+        } else if (8 == test_mode) {
+            CAN1_RingAlarm(5);
+            CAN1_RingAlarm(5);
+            CAN1_RingAlarm(5);
+            CAN1_RingAlarm(5);
         } else {
             CAN1_JumpLamp(5);
             CAN1_JumpLamp(5);
