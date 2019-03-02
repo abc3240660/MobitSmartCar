@@ -80,6 +80,7 @@ u8 gps_temp_dat4[32] = "";
 u8 gps_temp_dat5[32] = "";
 u8 gps_temp_dat6[32] = "";
 u8 gps_temp_dat7[32] = "";
+u8 gps_temp_dat8[32] = "";
 
 u8 g_hbeaterrcnt = 0;
 
@@ -389,7 +390,7 @@ u8 sim7500e_gps_check(void)
 {
 	memset(gps_temp_dat4, 0, 32);
 	memset(gps_temp_dat5, 0, 32);
-	sscanf((const char*)USART1_RX_BUF_BAK, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,]", gps_temp_dat1, gps_temp_dat2, gps_temp_dat3, gps_temp_dat4, gps_temp_dat5, gps_temp_dat6, gps_temp_dat7);
+	sscanf((const char*)USART1_RX_BUF_BAK, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,]", gps_temp_dat1, gps_temp_dat2, gps_temp_dat3, gps_temp_dat4, gps_temp_dat5, gps_temp_dat6, gps_temp_dat7, gps_temp_dat8);
 	
 	// 如果中途SIM7000E断电重启，那么是有回显的
 	// 判断GPS PWR是否因为异常断电导致被关闭了
@@ -402,9 +403,9 @@ u8 sim7500e_gps_check(void)
 	if (strlen((const char*)gps_temp_dat4) > 5) {
 		strcpy((char*)g_latitude, (const char*)gps_temp_dat4);
 		strcpy((char*)g_longitude, (const char*)gps_temp_dat5);
-		strcpy((char*)g_gps_speed, (const char*)gps_temp_dat6);
-		strcpy((char*)g_gps_degree, (const char*)gps_temp_dat7);
-		printf("GPS Latitude(%s), Longitude(%s), Speed(%s), Degree(%s)\n", gps_temp_dat4, gps_temp_dat5, gps_temp_dat6, gps_temp_dat7);
+		strcpy((char*)g_gps_speed, (const char*)gps_temp_dat7);
+		strcpy((char*)g_gps_degree, (const char*)gps_temp_dat8);
+		printf("GPS Latitude(%s), Longitude(%s), Speed(%s), Degree(%s)\n", gps_temp_dat4, gps_temp_dat5, gps_temp_dat7, gps_temp_dat8);
 	} else {
 		printf("Get GPS Nothing...\n");
 	}
