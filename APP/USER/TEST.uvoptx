@@ -211,71 +211,7 @@
         <Bp>
           <Number>0</Number>
           <Type>0</Type>
-          <LineNumber>162</LineNumber>
-          <EnabledFlag>1</EnabledFlag>
-          <Address>134282500</Address>
-          <ByteObject>0</ByteObject>
-          <HtxType>0</HtxType>
-          <ManyObjects>0</ManyObjects>
-          <SizeOfObject>0</SizeOfObject>
-          <BreakByAccess>0</BreakByAccess>
-          <BreakIfRCount>1</BreakIfRCount>
-          <Filename>..\MALLOC\malloc.c</Filename>
-          <ExecCommand></ExecCommand>
-          <Expression></Expression>
-        </Bp>
-        <Bp>
-          <Number>1</Number>
-          <Type>0</Type>
           <LineNumber>104</LineNumber>
-          <EnabledFlag>1</EnabledFlag>
-          <Address>134295720</Address>
-          <ByteObject>0</ByteObject>
-          <HtxType>0</HtxType>
-          <ManyObjects>0</ManyObjects>
-          <SizeOfObject>0</SizeOfObject>
-          <BreakByAccess>0</BreakByAccess>
-          <BreakIfRCount>1</BreakIfRCount>
-          <Filename>..\SYSTEM\usart\usart.c</Filename>
-          <ExecCommand></ExecCommand>
-          <Expression></Expression>
-        </Bp>
-        <Bp>
-          <Number>2</Number>
-          <Type>0</Type>
-          <LineNumber>98</LineNumber>
-          <EnabledFlag>1</EnabledFlag>
-          <Address>134282250</Address>
-          <ByteObject>0</ByteObject>
-          <HtxType>0</HtxType>
-          <ManyObjects>0</ManyObjects>
-          <SizeOfObject>0</SizeOfObject>
-          <BreakByAccess>0</BreakByAccess>
-          <BreakIfRCount>1</BreakIfRCount>
-          <Filename>..\MALLOC\malloc.c</Filename>
-          <ExecCommand></ExecCommand>
-          <Expression>\\TEST\../MALLOC/malloc.c\98</Expression>
-        </Bp>
-        <Bp>
-          <Number>3</Number>
-          <Type>0</Type>
-          <LineNumber>98</LineNumber>
-          <EnabledFlag>1</EnabledFlag>
-          <Address>134282328</Address>
-          <ByteObject>0</ByteObject>
-          <HtxType>0</HtxType>
-          <ManyObjects>0</ManyObjects>
-          <SizeOfObject>0</SizeOfObject>
-          <BreakByAccess>0</BreakByAccess>
-          <BreakIfRCount>1</BreakIfRCount>
-          <Filename>..\MALLOC\malloc.c</Filename>
-          <ExecCommand></ExecCommand>
-          <Expression>\\TEST\../MALLOC/malloc.c\98</Expression>
-        </Bp>
-        <Bp>
-          <Number>4</Number>
-          <Type>0</Type>
-          <LineNumber>102</LineNumber>
           <EnabledFlag>1</EnabledFlag>
           <Address>0</Address>
           <ByteObject>0</ByteObject>
@@ -293,12 +229,17 @@
         <Ww>
           <count>0</count>
           <WinNumber>1</WinNumber>
-          <ItemText>offset</ItemText>
+          <ItemText>g_gps_trace_gap</ItemText>
         </Ww>
         <Ww>
           <count>1</count>
           <WinNumber>1</WinNumber>
-          <ItemText>memx</ItemText>
+          <ItemText>sim7500dev.tcp_status</ItemText>
+        </Ww>
+        <Ww>
+          <count>2</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>g_hbeat_active</ItemText>
         </Ww>
       </WatchWindow1>
       <MemoryWindow1>
@@ -445,7 +386,7 @@
 
   <Group>
     <GroupName>HARDWARE</GroupName>
-    <tvExp>0</tvExp>
+    <tvExp>1</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>

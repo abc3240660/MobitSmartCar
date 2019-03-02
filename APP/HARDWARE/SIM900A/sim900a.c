@@ -65,6 +65,12 @@ u16 g_bms_vot = 8888;
 u16 g_bms_percent = 8888;
 u16 g_bms_temp_max = 8888;
 u16 g_bms_temp_min = 8888;
+
+u8 g_bms_vot_str[8] = "F";
+u8 g_bms_percent_str[8] = "F";
+u8 g_bms_temp_max_str[8] = "F";
+u8 g_bms_temp_min_str[8] = "F";
+
 u16 g_bms_charged_times = 0;// Save into ExFlash
 
 u8 gps_temp_dat1[32] = "";
@@ -72,13 +78,15 @@ u8 gps_temp_dat2[32] = "";
 u8 gps_temp_dat3[32] = "";
 u8 gps_temp_dat4[32] = "";
 u8 gps_temp_dat5[32] = "";
+u8 gps_temp_dat6[32] = "";
+u8 gps_temp_dat7[32] = "";
 
 u8 g_hbeaterrcnt = 0;
 
 u16 g_car_sta = 0;
 
-u8 g_svr_ip[32]  = "47.104.83.177";
-u8 g_svr_port[8] = "88";
+u8 g_svr_ip[32]  = "47.254.143.11";
+u8 g_svr_port[8] = "10100";
 u8 g_svr_apn[32] = "CMNET";
 
 u32 g_need_iap_flag = 0;
@@ -169,6 +177,9 @@ u16 g_gps_trace_gap = 0;
 
 u8 g_longitude[32] = "";
 u8 g_latitude[32] = "";
+u8 g_gps_speed[32] = "";
+u8 g_gps_degree[32] = "";
+
 u8 g_imei_str[32] = "";
 
 u8 g_dw_write_enable = 0;
@@ -378,7 +389,7 @@ u8 sim7500e_gps_check(void)
 {
 	memset(gps_temp_dat4, 0, 32);
 	memset(gps_temp_dat5, 0, 32);
-	sscanf((const char*)USART1_RX_BUF_BAK, "%[^,],%[^,],%[^,],%[^,],%[^,]", gps_temp_dat1, gps_temp_dat2, gps_temp_dat3, gps_temp_dat4, gps_temp_dat5);
+	sscanf((const char*)USART1_RX_BUF_BAK, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,]", gps_temp_dat1, gps_temp_dat2, gps_temp_dat3, gps_temp_dat4, gps_temp_dat5, gps_temp_dat6, gps_temp_dat7);
 	
 	// 如果中途SIM7000E断电重启，那么是有回显的
 	// 判断GPS PWR是否因为异常断电导致被关闭了
@@ -386,10 +397,14 @@ u8 sim7500e_gps_check(void)
 	
 	memset(g_latitude, 0, 32);
 	memset(g_longitude, 0, 32);
+	memset(g_gps_speed, 0, 32);
+	memset(g_gps_degree, 0, 32);
 	if (strlen((const char*)gps_temp_dat4) > 5) {
 		strcpy((char*)g_latitude, (const char*)gps_temp_dat4);
 		strcpy((char*)g_longitude, (const char*)gps_temp_dat5);
-		printf("GPS Latitude(%s), Longitude(%s)\n", gps_temp_dat4, gps_temp_dat5);
+		strcpy((char*)g_gps_speed, (const char*)gps_temp_dat6);
+		strcpy((char*)g_gps_degree, (const char*)gps_temp_dat7);
+		printf("GPS Latitude(%s), Longitude(%s), Speed(%s), Degree(%s)\n", gps_temp_dat4, gps_temp_dat5, gps_temp_dat6, gps_temp_dat7);
 	} else {
 		printf("Get GPS Nothing...\n");
 	}
@@ -729,9 +744,9 @@ void sim7500e_do_query_gps_ack()
 	sim7500e_gps_check();
 	
 	if (strlen((const char*)g_longitude) > 5) {
-		sprintf(send_buf_main, "%s,%s,%s,%s,%s,%s,%s,0$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_DEV_ACK, CMD_QUERY_GPS, g_longitude, g_latitude);
+		sprintf(send_buf_main, "%s,%s,%s,%s,%s,%s,%s,%s,%s,0$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_DEV_ACK, CMD_QUERY_GPS, g_longitude, g_latitude, g_gps_speed, g_gps_degree);
 	} else {
-		sprintf(send_buf_main, "%s,%s,%s,%s,%s,F,F,0$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_DEV_ACK, CMD_QUERY_GPS);
+		sprintf(send_buf_main, "%s,%s,%s,%s,%s,F,F,F,F,0$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_DEV_ACK, CMD_QUERY_GPS);
 	}
 
 	sim7500e_tcp_send(send_buf_main);
@@ -776,8 +791,22 @@ void sim7500e_do_mp3_play_ack()
 // DEV ACK
 void sim7500e_do_query_bms_ack()
 {
+	if (8888 == g_bms_temp_max) {
+		sprintf((char*)g_bms_temp_max_str, "%d", g_bms_temp_max);
+	} else {
+		sprintf((char*)g_bms_temp_max_str, "%s", "F");
+	}
+	g_bms_temp_max = 8888;
+
+	if (8888 == g_bms_percent) {
+		sprintf((char*)g_bms_percent_str, "%d", g_bms_percent);
+	} else {
+		sprintf((char*)g_bms_percent_str, "%s", "F");
+	}
+	g_bms_percent = 8888;
+
 	memset(send_buf_main, 0, LEN_MAX_SEND);
-	sprintf(send_buf_main, "%s,%s,%s,%s,%s,%d,%d,%d$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_DEV_ACK, CMD_QUERY_BMS, g_bms_percent, g_bms_charged_times, g_bms_temp_max);
+	sprintf(send_buf_main, "%s,%s,%s,%s,%s,%s,%d,%s$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_DEV_ACK, CMD_QUERY_BMS, g_bms_percent_str, g_bms_charged_times, g_bms_temp_max_str);
 
 	sim7500e_tcp_send(send_buf_main);
 }
@@ -805,8 +834,15 @@ void sim7500e_do_mp3_dw_success_ack()
 // DEV Auto Send
 u8 sim7500e_do_dev_register_auto()
 {
+	if (8888 == g_bms_percent) {
+		sprintf((char*)g_bms_percent_str, "%d", g_bms_percent);
+	} else {
+		sprintf((char*)g_bms_percent_str, "%s", "F");
+	}
+	g_bms_percent = 8888;
+
 	memset(send_buf, 0, LEN_MAX_SEND);
-	sprintf(send_buf, "%s,%s,%s,%s,%s,%s,%d$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_DEV_REGISTER, HW_VERSION, SW_VERSION, g_bms_percent);
+	sprintf(send_buf, "%s,%s,%s,%s,%s,%s,%s$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_DEV_REGISTER, HW_VERSION, SW_VERSION, g_bms_percent_str);
 
 	sim7500e_tcp_send(send_buf);
 	
@@ -844,8 +880,22 @@ void sim7500e_do_heart_beat_auto()
 	car_status[7] = (g_car_sta >> 8) + '0';
 	car_status[8] = (g_car_sta&BIT_CHARGE_STA)?'1':'0';
 
+	if (8888 == g_bms_vot) {
+		sprintf((char*)g_bms_vot_str, "%d", g_bms_vot);
+	} else {
+		sprintf((char*)g_bms_vot_str, "%s", "F");
+	}
+	g_bms_vot = 8888;
+
+	if (8888 == g_bms_percent) {
+		sprintf((char*)g_bms_percent_str, "%d", g_bms_percent);
+	} else {
+		sprintf((char*)g_bms_percent_str, "%s", "F");
+	}
+	g_bms_percent = 8888;
+
 	memset(send_buf, 0, LEN_MAX_SEND);
-	sprintf(send_buf, "%s,%s,%s,%s,%s,%d,%s,%d,%d,%s$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_HEART_BEAT, dev_time, (g_drlock_sta_chged&0x7F), g_rssi_sim, g_bms_vot, g_bms_percent, car_status);
+	sprintf(send_buf, "%s,%s,%s,%s,%s,%d,%s,%s,%s,%s$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_HEART_BEAT, dev_time, (g_drlock_sta_chged&0x7F), g_rssi_sim, g_bms_vot_str, g_bms_percent_str, car_status);
 	
 	sim7500e_tcp_send(send_buf);
 }
@@ -922,11 +972,11 @@ void sim7500e_do_gps_location_report()
 	sim7500e_gps_check();
 	
 	if (strlen((const char*)g_longitude) > 5) {
-		sprintf(send_buf, "%s,%s,%s,%s,%s,%s,0$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_REPORT_GPS, g_longitude, g_latitude);
+		sprintf(send_buf, "%s,%s,%s,%s,%s,%s,%s,%s,0$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_REPORT_GPS, g_longitude, g_latitude, g_gps_speed, g_gps_degree);
 	} else {
         // continue report till located
         g_gps_active = 1;
-		sprintf(send_buf, "%s,%s,%s,%s,F,F,0$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_REPORT_GPS);
+		sprintf(send_buf, "%s,%s,%s,%s,F,F,F,F,0$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_REPORT_GPS);
 	}
 
 	sim7500e_tcp_send(send_buf);
@@ -944,8 +994,15 @@ void sim7500e_do_iap_success_report()
 // DEV Auto SEND
 void sim7500e_do_charge_start_report()
 {
+	if (8888 == g_bms_percent) {
+		sprintf((char*)g_bms_percent_str, "%d", g_bms_percent);
+	} else {
+		sprintf((char*)g_bms_percent_str, "%s", "F");
+	}
+	g_bms_percent = 8888;
+
 	memset(send_buf, 0, LEN_MAX_SEND);
-	sprintf(send_buf, "%s,%s,%s,%s,%d,%d$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_CHARGE_STARTED, g_bms_percent, g_bms_charged_times);
+	sprintf(send_buf, "%s,%s,%s,%s,%s,%d$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_CHARGE_STARTED, g_bms_percent_str, g_bms_charged_times);
 
 	sim7500e_tcp_send(send_buf);
 }
@@ -953,8 +1010,15 @@ void sim7500e_do_charge_start_report()
 // DEV Auto SEND
 void sim7500e_do_charge_stop_report()
 {
+	if (8888 == g_bms_percent) {
+		sprintf((char*)g_bms_percent_str, "%d", g_bms_percent);
+	} else {
+		sprintf((char*)g_bms_percent_str, "%s", "F");
+	}
+	g_bms_percent = 8888;
+
 	memset(send_buf, 0, LEN_MAX_SEND);
-	sprintf(send_buf, "%s,%s,%s,%s,%d,%d$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_CHARGE_STOPED, g_bms_percent, g_bms_charged_times);
+	sprintf(send_buf, "%s,%s,%s,%s,%s,%d$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_CHARGE_STOPED, g_bms_percent_str, g_bms_charged_times);
 
 	sim7500e_tcp_send(send_buf);
 }
@@ -1632,9 +1696,17 @@ void sim7500e_communication_loop(u8 mode,u8* ipaddr,u8* port)
                 }
 
                 g_hbeat_active = 0;
+								printf("xxxxxxxxxxxxxxxxxxxxxxxx begin\n");
                 sim7500e_query_rssi();
                 sim7500e_do_heart_beat_auto();
+								printf("xxxxxxxxxxxxxxxxxxxxxxxx end\n");
 
+								// AT Communication Failed
+								if (0 == strlen(g_rssi_sim)) {
+									printf("rssi is empty, do reboot\n");
+									SoftReset();
+								}
+								
                 g_hbeaterrcnt++;
                 printf("hbeaterrcnt = %d\r\n",g_hbeaterrcnt);
             } else {
@@ -1644,7 +1716,7 @@ void sim7500e_communication_loop(u8 mode,u8* ipaddr,u8* port)
 
         if (0 == (timex%20)) {
             LED_G = !LED_G;
-            // printf("main_loop test\n");
+            printf("main_loop test\n");
         }
 
         timex++;

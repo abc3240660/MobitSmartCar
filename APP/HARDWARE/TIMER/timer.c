@@ -430,8 +430,22 @@ void TIM7_IRQHandler(void)
 				DW_RX_STA = USART1_RX_STA;
 				memcpy(DW_RX_BUF, USART1_RX_BUF, (USART1_RX_STA&0X7FFF)+1);
 			} else if ((str = strstr((const char*)USART1_RX_BUF, (const char*)"^MOBIT"))) {
-				MOBIT_RX_STA[U1_MOBIT_RX_ID] = USART1_RX_STA;
-				memcpy(MOBIT_RX_BUF+U1_RX_LEN_ONE*U1_MOBIT_RX_ID, USART1_RX_BUF, (USART1_RX_STA&0X7FFF)+1);
+				u8 mobit_offset = str - (char*)USART1_RX_BUF;
+				if (0 == mobit_offset) {
+					MOBIT_RX_STA[U1_MOBIT_RX_ID] = USART1_RX_STA;
+					memcpy(MOBIT_RX_BUF+U1_RX_LEN_ONE*U1_MOBIT_RX_ID, USART1_RX_BUF, (USART1_RX_STA&0X7FFF)+1);
+				} else {
+					MOBIT_RX_STA[U1_MOBIT_RX_ID] = USART1_RX_STA-mobit_offset;
+					memcpy(MOBIT_RX_BUF+U1_RX_LEN_ONE*U1_MOBIT_RX_ID, str, (USART1_RX_STA&0X7FFF-mobit_offset)+1);
+					
+					AT_RX_STA[U1_AT_RX_ID] = mobit_offset;
+					AT_RX_STA[U1_AT_RX_ID] |= (1<<15);
+					memset(AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID, 0, U1_RX_LEN_ONE);
+					memcpy(AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID, USART1_RX_BUF, mobit_offset);
+					
+					// next index for use
+					U1_AT_RX_ID = (U1_AT_RX_ID+1)%U1_RX_BUF_CNT;
+				}
 
 				// next index for use
 				U1_MOBIT_RX_ID = (U1_MOBIT_RX_ID+1)%U1_RX_BUF_CNT;
