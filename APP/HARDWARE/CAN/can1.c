@@ -258,10 +258,20 @@ u8 CAN1_Receive_Msg(u8 *buf)
 	return RxMessage.DLC;	
 }
 
+u8 CAN1_Wakeup(void)
+{
+	u8 can1_sendbuf[8]={0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+	
+	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
+	
+	return 0;
+}
+
 u8 CAN1_StartEngine(void)
 {
 	u8 can1_sendbuf[8]={0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 	
+	CAN1_Wakeup();
 	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
 	
 	return 0;
@@ -271,6 +281,7 @@ u8 CAN1_StopEngine(void)
 {
 	u8 can1_sendbuf[8]={0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 	
+	CAN1_Wakeup();
 	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
 	
 	return 0;
@@ -280,6 +291,7 @@ u8 CAN1_OpenDoor(void)
 {
 	u8 can1_sendbuf[8]={0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 	
+	CAN1_Wakeup();
 	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
 	
 	return 0;
@@ -289,6 +301,7 @@ u8 CAN1_CloseDoor(void)
 {
 	u8 can1_sendbuf[8]={0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 	
+	CAN1_Wakeup();
 	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
 	
 	return 0;
@@ -298,6 +311,7 @@ u8 CAN1_JumpLamp(u8 times)
 {
 	u8 can1_sendbuf[8]={0x01, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 	
+	CAN1_Wakeup();
 	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
 	
 	return 0;
@@ -307,6 +321,7 @@ u8 CAN1_RingAlarm(u8 times)
 {
 	u8 can1_sendbuf[8]={0x02, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00};
 	
+	CAN1_Wakeup();
 	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
 	
 	return 0;
@@ -316,6 +331,7 @@ u8 CAN1_StartAll(void)
 {
 	u8 can1_sendbuf[8]={0x3F, 0x05, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00};
 	
+	CAN1_Wakeup();
 	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
 	
 	return 0;
@@ -325,6 +341,7 @@ u8 CAN1_StartHint(void)
 {
 	u8 can1_sendbuf[8]={0x0C, 0x05, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00};
 	
+	CAN1_Wakeup();
 	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
 	
 	return 0;

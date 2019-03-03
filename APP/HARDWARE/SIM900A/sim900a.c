@@ -792,14 +792,14 @@ void sim7500e_do_mp3_play_ack()
 // DEV ACK
 void sim7500e_do_query_bms_ack()
 {
-	if (8888 == g_bms_temp_max) {
+	if (8888 != g_bms_temp_max) {
 		sprintf((char*)g_bms_temp_max_str, "%d", g_bms_temp_max);
 	} else {
 		sprintf((char*)g_bms_temp_max_str, "%s", "F");
 	}
 	g_bms_temp_max = 8888;
 
-	if (8888 == g_bms_percent) {
+	if (8888 != g_bms_percent) {
 		sprintf((char*)g_bms_percent_str, "%d", g_bms_percent);
 	} else {
 		sprintf((char*)g_bms_percent_str, "%s", "F");
@@ -835,7 +835,7 @@ void sim7500e_do_mp3_dw_success_ack()
 // DEV Auto Send
 u8 sim7500e_do_dev_register_auto()
 {
-	if (8888 == g_bms_percent) {
+	if (8888 != g_bms_percent) {
 		sprintf((char*)g_bms_percent_str, "%d", g_bms_percent);
 	} else {
 		sprintf((char*)g_bms_percent_str, "%s", "F");
@@ -881,14 +881,14 @@ void sim7500e_do_heart_beat_auto()
 	car_status[7] = (g_car_sta >> 8) + '0';
 	car_status[8] = (g_car_sta&BIT_CHARGE_STA)?'1':'0';
 
-	if (8888 == g_bms_vot) {
+	if (8888 != g_bms_vot) {
 		sprintf((char*)g_bms_vot_str, "%d", g_bms_vot);
 	} else {
 		sprintf((char*)g_bms_vot_str, "%s", "F");
 	}
 	g_bms_vot = 8888;
 
-	if (8888 == g_bms_percent) {
+	if (8888 != g_bms_percent) {
 		sprintf((char*)g_bms_percent_str, "%d", g_bms_percent);
 	} else {
 		sprintf((char*)g_bms_percent_str, "%s", "F");
@@ -995,7 +995,7 @@ void sim7500e_do_iap_success_report()
 // DEV Auto SEND
 void sim7500e_do_charge_start_report()
 {
-	if (8888 == g_bms_percent) {
+	if (8888 != g_bms_percent) {
 		sprintf((char*)g_bms_percent_str, "%d", g_bms_percent);
 	} else {
 		sprintf((char*)g_bms_percent_str, "%s", "F");
@@ -1011,7 +1011,7 @@ void sim7500e_do_charge_start_report()
 // DEV Auto SEND
 void sim7500e_do_charge_stop_report()
 {
-	if (8888 == g_bms_percent) {
+	if (8888 != g_bms_percent) {
 		sprintf((char*)g_bms_percent_str, "%d", g_bms_percent);
 	} else {
 		sprintf((char*)g_bms_percent_str, "%s", "F");
