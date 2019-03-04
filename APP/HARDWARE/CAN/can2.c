@@ -99,8 +99,8 @@ void CAN2_RX0_IRQHandler(void)
 {
   	CanRxMsg RxMessage;
 	
-    CAN_Receive(CAN2, 0, &RxMessage);
-		// CAN2_Receive_Msg(NULL);
+    // CAN_Receive(CAN2, 0, &RxMessage);
+		CAN2_Receive_Msg(NULL);
 	
 		// printf("CAN2 Recved Msg 0x%.8X\n", RxMessage.ExtId);
 }
@@ -150,7 +150,7 @@ u8 CAN2_Receive_Msg(u8 *buf)
     CAN_Receive(CAN2, CAN_FIFO0, &RxMessage);//¶ÁÈ¡Êý¾Ý	
     for(i=0;i<RxMessage.DLC;i++)
     buf[i]=RxMessage.Data[i];
-
+	
 		if (0x18FF28F4 == RxMessage.ExtId) {
 			if (0x02 == (RxMessage.Data[0]&0x2)) {// battery charging
 				if (0 == g_bms_charge_sta_chged) {
@@ -170,11 +170,13 @@ u8 CAN2_Receive_Msg(u8 *buf)
 			}
 			
 			g_bms_percent = RxMessage.Data[1];
-            g_bms_vot = (RxMessage.Data[5]<<8 + RxMessage.Data[4]) / 10;
+            g_bms_vot = ((RxMessage.Data[5]<<8) + RxMessage.Data[4]) / 10;
 
             test_cnt_bms++;
 
-            if ((test_cnt_bms>25) || (g_bms_charge_sta_chged&0x80)) {
+						//printf("bms xx percent = %d, vot = %d(L%d)\n", g_bms_percent, g_bms_vot, RxMessage.Data[4]);
+			
+            if ((test_cnt_bms>50) || (g_bms_charge_sta_chged&0x80)) {
                 test_cnt_bms = 0;
 
                 printf("bms percent = %d, vot = %d(L%d)\n", g_bms_percent, g_bms_vot, RxMessage.Data[4]);
@@ -182,7 +184,6 @@ u8 CAN2_Receive_Msg(u8 *buf)
                 memset(log_msg_bms, 0, 64);
                 sprintf(log_msg_bms, "RECV: %.8X - %.2X%.2X%.2X%.2X%.2X%.2X%.2X%.2X", RxMessage.ExtId, RxMessage.Data[0], RxMessage.Data[1], RxMessage.Data[2], RxMessage.Data[3], RxMessage.Data[4], RxMessage.Data[5], RxMessage.Data[6], RxMessage.Data[7]);
 
-                printf("CAN2 %s\n", log_msg_bms);
                 write_logs("CAN2", (char*)log_msg_bms, strlen((char*)log_msg_bms), 2);
 			}
 		} else if (0x18FE28F4 == RxMessage.ExtId) {

@@ -350,11 +350,13 @@ void lower_task(void *pdata)
 		MPU6050_Risk_Check();
 
 		if (0 == KEY_HAND_BRAKE) {// Locked
+			//printf("g_hbrake_sta_chged LA = 0x%.2x\n", g_hbrake_sta_chged);
 			if (1 == (g_hbrake_sta_chged&0x7F)) {
 				g_hbrake_sta_chged = 0;
                 g_hbrake_sta_chged |= 0x80;
 			}
 		} else {// Unlocked
+			//printf("g_hbrake_sta_chged FA = 0x%.2x\n", g_hbrake_sta_chged);
 			if (0 == (g_hbrake_sta_chged&0x7F)) {
 				g_hbrake_sta_chged = 1;
                 g_hbrake_sta_chged |= 0x80;

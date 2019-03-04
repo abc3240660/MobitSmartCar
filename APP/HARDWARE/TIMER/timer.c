@@ -431,6 +431,8 @@ void TIM7_IRQHandler(void)
 				memcpy(DW_RX_BUF, USART1_RX_BUF, (USART1_RX_STA&0X7FFF)+1);
 			} else if ((str = strstr((const char*)USART1_RX_BUF, (const char*)"^MOBIT"))) {
 				u8 mobit_offset = str - (char*)USART1_RX_BUF;
+				// printf("USART1_RX_BUF = %s\n", USART1_RX_BUF);
+				// printf("mobit_offset = %d\n", mobit_offset);
 				if (0 == mobit_offset) {
 					MOBIT_RX_STA[U1_MOBIT_RX_ID] = USART1_RX_STA;
 					memcpy(MOBIT_RX_BUF+U1_RX_LEN_ONE*U1_MOBIT_RX_ID, USART1_RX_BUF, (USART1_RX_STA&0X7FFF)+1);
@@ -443,12 +445,16 @@ void TIM7_IRQHandler(void)
 					memset(AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID, 0, U1_RX_LEN_ONE);
 					memcpy(AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID, USART1_RX_BUF, mobit_offset);
 					
+					// printf("RECVED X1 = %s\n", AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID);
 					// next index for use
 					U1_AT_RX_ID = (U1_AT_RX_ID+1)%U1_RX_BUF_CNT;
 				}
 
+				// printf("RECVED X2 = %s\n", MOBIT_RX_BUF+U1_RX_LEN_ONE*U1_MOBIT_RX_ID);
 				// next index for use
 				U1_MOBIT_RX_ID = (U1_MOBIT_RX_ID+1)%U1_RX_BUF_CNT;
+				
+				// printf("U1_AT_RX_ID=%d, U1_MOBIT_RX_ID=%d\n", U1_AT_RX_ID, U1_MOBIT_RX_ID);
 			} else {
 				AT_RX_STA[U1_AT_RX_ID] = USART1_RX_STA;
 				memcpy(AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID, USART1_RX_BUF, (USART1_RX_STA&0X7FFF)+1);

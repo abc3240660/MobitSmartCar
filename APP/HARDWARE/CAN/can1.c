@@ -237,15 +237,20 @@ u8 CAN1_Receive_Msg(u8 *buf)
 		g_car_sta &= 0xFF;
 		g_car_sta |= (((RxMessage.Data[0])&0x03)<<8);
 
-		g_trip_meters = (RxMessage.Data[7]<<8) + RxMessage.Data[6];
+		g_trip_meters = (RxMessage.Data[6]<<8) + RxMessage.Data[5];
 
         test_cnt_mc3264++;
 
-        if (test_cnt_mc3264 > 25) {
+        if (test_cnt_mc3264 > 50) {
+						u32 speed = (RxMessage.Data[2]<<8) + RxMessage.Data[1];;
+					
+						// (speed*314*465*3600)/(100*12*1000*1000);
+						speed = (speed*314*93*3)/(1*1*200*1000);
+						printf("speed = %d KM/H\n", speed);
+
             memset(log_msg, 0, 64);
             sprintf(log_msg, "RECV: %.8X - %.2X%.2X%.2X%.2X%.2X%.2X%.2X%.2X", RxMessage.ExtId, RxMessage.Data[0], RxMessage.Data[1], RxMessage.Data[2], RxMessage.Data[3], RxMessage.Data[4], RxMessage.Data[5], RxMessage.Data[6], RxMessage.Data[7]);
 
-            printf("CAN1 %s\n", log_msg);
             write_logs("CAN1", (char*)log_msg, strlen((char*)log_msg), 2);
             test_cnt_mc3264 = 0;
         }

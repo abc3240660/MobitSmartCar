@@ -34,6 +34,8 @@ u8 g_door_state = 0;
 // ECAR ON12V:
 u8 g_power_state = 0;
 
+u8 g_rssi_empty_cnt = 0;
+
 u8 g_auto_evt_dr_locked = 0;
 u8 g_dr_unlocked_report = 0;
 
@@ -1065,6 +1067,10 @@ void sim7500e_parse_msg(char* msg)
 			if (UNKNOWN_CMD == cmd_type) {
 				cmd_type = (enum CMD_TYPE)sim7500e_is_supported_cmd(cmd_count, split_str);
 
+				if (strstr((const char*)msg, (const char*)"B5")) {
+					g_door_state = 0;
+				}
+				
 				if (cmd_type != UNKNOWN_CMD) {
 					if (0 == data_pos) {
 						data_pos = index;
@@ -1094,6 +1100,26 @@ void sim7500e_parse_msg(char* msg)
 						g_gps_trace_gap = 0;
 						printf("g_gps_trace_gap = %d\n", g_gps_trace_gap);
 						sim7500e_do_stop_trace_ack();
+					} else if (HEART_BEAT == cmd_type) {
+					// Do nothing
+					} else if (DOOR_LOCKED == cmd_type) {
+                g_drlock_sta_chged &= 0x7F;
+                //printf("recved DOOR_LOCKED ACK from Server\n");
+					} else if (DOOR_UNLOCKED == cmd_type) {
+                g_drlock_sta_chged &= 0x7F;
+                //printf("recved DOOR_UNLOCKED ACK from Server\n");
+					} else if (DOOR_OPENED == cmd_type) {
+                g_dropen_sta_chged &= 0x7F;
+                //printf("recved DOOR_OPENED ACK from Server\n");
+					} else if (DOOR_CLOSED == cmd_type) {
+                g_dropen_sta_chged &= 0x7F;
+                //printf("recved DOOR_CLOSED ACK from Server\n");
+					} else if (BRAKE_LOCKED == cmd_type) {
+                g_hbrake_sta_chged &= 0x7F;
+                //printf("recved BRAKE_LOCKED ACK from Server\n");
+					} else if (BRAKE_UNLOCKED == cmd_type) {
+                g_hbrake_sta_chged &= 0x7F;
+                //printf("recved BRAKE_UNLOCKED ACK from Server\n");
 					}
 				} else {// Maybe Re, So Can Not break
 					// break;
@@ -1119,26 +1145,6 @@ void sim7500e_parse_msg(char* msg)
                         printf("change g_hbeat_gap = %d\n", g_hbeat_gap);
                     }
 				}
-			} else if (HEART_BEAT == cmd_type) {
-				// Do nothing
-			} else if (DOOR_LOCKED == cmd_type) {
-                g_drlock_sta_chged &= 0x7F;
-                printf("recved DOOR_LOCKED ACK from Server\n");
-			} else if (DOOR_UNLOCKED == cmd_type) {
-                g_drlock_sta_chged &= 0x7F;
-                printf("recved DOOR_UNLOCKED ACK from Server\n");
-			} else if (DOOR_OPENED == cmd_type) {
-                g_dropen_sta_chged &= 0x7F;
-                printf("recved DOOR_OPENED ACK from Server\n");
-			} else if (DOOR_CLOSED == cmd_type) {
-                g_dropen_sta_chged &= 0x7F;
-                printf("recved DOOR_CLOSED ACK from Server\n");
-			} else if (BRAKE_LOCKED == cmd_type) {
-                g_hbrake_sta_chged &= 0x7F;
-                printf("recved BRAKE_LOCKED ACK from Server\n");
-			} else if (BRAKE_UNLOCKED == cmd_type) {
-                g_hbrake_sta_chged &= 0x7F;
-                printf("recved BRAKE_UNLOCKED ACK from Server\n");
 			} else if (IAP_UPGRADE == cmd_type) {
 				g_iap_update = 1;
 				memset(g_iap_update_url, 0, LEN_DW_URL);
@@ -1213,8 +1219,6 @@ u8 sim7500e_setup_connect(void)
 		return 1;
 	}
 
-	write_logs("SIM7000E", (char*)"TCP CONNECTED", strlen((char*)"TCP CONNECTED"), 2);
-
 	i = 0;
 	while (1) {
 		// sim7500e_send_cmd("AT+CIPSHUT","SHUT OK",200);
@@ -1227,6 +1231,7 @@ u8 sim7500e_setup_connect(void)
 		}
 		
 		if (1 == sim7500dev.tcp_status) {// Connected OK
+			write_logs("SIM7000E", (char*)"TCP CONNECTED", strlen((char*)"TCP CONNECTED"), 2);
 			break;
 		} else {
 			// write_logs("SIM7000E", (char*)"Cannot Setup TCP Connect, just soft restart...\n", strlen((char*)"Cannot Setup TCP Connect, just soft restart...\n"), 3);
@@ -1728,8 +1733,13 @@ void sim7500e_communication_loop(u8 mode,u8* ipaddr,u8* port)
 
 								// AT Communication Failed
 								if (0 == strlen(g_rssi_sim)) {
-									printf("rssi is empty, do reboot\n");
-									SoftReset();
+									g_rssi_empty_cnt++;
+									if (10 == g_rssi_empty_cnt) {
+										printf("rssi is empty, do reboot\n");
+										SoftReset();
+									}
+								} else {
+									g_rssi_empty_cnt = 0;
 								}
 								
                 g_hbeaterrcnt++;
