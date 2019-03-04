@@ -12,6 +12,7 @@
 #include "vs10xx.h"
 #include "mp3play.h"
 #include "rtc.h"
+#include "led.h"
 #include "mpu6050.h"
 #include "inv_mpu.h"
 #include "inv_mpu_dmp_motion_driver.h"
@@ -89,6 +90,8 @@ extern u8 g_hbeat_gap;// default 6s
 extern u32 g_time_start_hbeat;
 
 extern u8 g_hbrake_sta_chged;
+
+extern __sim7500dev sim7500dev;
 
 extern void sim7500e_mobit_process(u8 index);
 void create_logfile(void);
@@ -413,6 +416,8 @@ void main_task(void *pdata)
 
 void timer_task(void *pdata)
 {
+    u8 loop_cnt = 0;
+
     while (1) {
         if (g_gps_trace_gap) {
             if (is_jiffies_timeout(g_time_start_gps, (g_gps_trace_gap*1000))) {
@@ -424,6 +429,39 @@ void timer_task(void *pdata)
         if (is_jiffies_timeout(g_time_start_hbeat, (g_hbeat_gap*1000))) {
             g_hbeat_active = 1;
             g_time_start_hbeat = os_jiffies;
+        }
+
+        // LEDs Running for 10s
+        if (loop_cnt <= 100) {
+            if (100 == loop_cnt) {
+                // NET NG
+                LED_R = 1;
+                LED_G = 0;
+                LED_Y = 0;
+            } else {
+                switch (loop_cnt%3)
+                {
+                    case 0:
+                        LED_R = 1;
+                        LED_G = 0;
+                        LED_Y = 0;
+                        break;
+                    case 1:
+                        LED_R = 0;
+                        LED_G = 1;
+                        LED_Y = 0;
+                        break;
+                    case 2:
+                        LED_R = 0;
+                        LED_G = 0;
+                        LED_Y = 1;
+                        break;
+                    default:
+                    break;
+                }
+            }
+
+            loop_cnt++;
         }
 
         OSTimeDlyHMSM(0,0,0,100);// 50ms
@@ -522,10 +560,13 @@ void HardFault_Handler(void)
 	write_logs("SIM7000E", (char*)"HardFault_Handler -> Reboot\n", strlen((char*)"HardFault_Handler Enter -> Reboot\n"), 3);
 	SoftReset();
 
+    LED_G = 0;
+
 	while(t<5)
 	{
 		t++;
-		LED_R = !LED_R;
+		LED_Y = !LED_Y;
+        LED_R = !LED_R;
 		for(i=0;i<0X1FFFFF;i++);
 	}
 }

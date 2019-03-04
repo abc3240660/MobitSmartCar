@@ -249,10 +249,6 @@ u8 CAN1_Receive_Msg(u8 *buf)
             write_logs("CAN1", (char*)log_msg, strlen((char*)log_msg), 2);
             test_cnt_mc3264 = 0;
         }
-
-		if (0 == (test_cnt_mc3264%20)) {
-			LED_Y = !LED_Y;
-		}
 	}
 
 	return RxMessage.DLC;	

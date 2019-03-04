@@ -745,8 +745,10 @@ void sim7500e_do_query_gps_ack()
 	sim7500e_gps_check();
 	
 	if (strlen((const char*)g_longitude) > 5) {
+        LED_Y = 0;
 		sprintf(send_buf_main, "%s,%s,%s,%s,%s,%s,%s,%s,%s,0$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_DEV_ACK, CMD_QUERY_GPS, g_longitude, g_latitude, g_gps_speed, g_gps_degree);
 	} else {
+        LED_Y = 1;
 		sprintf(send_buf_main, "%s,%s,%s,%s,%s,F,F,F,F,0$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_DEV_ACK, CMD_QUERY_GPS);
 	}
 
@@ -973,8 +975,10 @@ void sim7500e_do_gps_location_report()
 	sim7500e_gps_check();
 	
 	if (strlen((const char*)g_longitude) > 5) {
+        LED_Y = 0;
 		sprintf(send_buf, "%s,%s,%s,%s,%s,%s,%s,%s,0$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_REPORT_GPS, g_longitude, g_latitude, g_gps_speed, g_gps_degree);
 	} else {
+        LED_Y = 1;
         // continue report till located
         g_gps_active = 1;
 		sprintf(send_buf, "%s,%s,%s,%s,F,F,F,F,0$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_REPORT_GPS);
@@ -1117,16 +1121,22 @@ void sim7500e_parse_msg(char* msg)
 				// Do nothing
 			} else if (DOOR_LOCKED == cmd_type) {
                 g_drlock_sta_chged &= 0x7F;
+                printf("recved DOOR_LOCKED ACK from Server\n");
 			} else if (DOOR_UNLOCKED == cmd_type) {
                 g_drlock_sta_chged &= 0x7F;
+                printf("recved DOOR_UNLOCKED ACK from Server\n");
 			} else if (DOOR_OPENED == cmd_type) {
                 g_dropen_sta_chged &= 0x7F;
+                printf("recved DOOR_OPENED ACK from Server\n");
 			} else if (DOOR_CLOSED == cmd_type) {
                 g_dropen_sta_chged &= 0x7F;
+                printf("recved DOOR_CLOSED ACK from Server\n");
 			} else if (BRAKE_LOCKED == cmd_type) {
                 g_hbrake_sta_chged &= 0x7F;
+                printf("recved BRAKE_LOCKED ACK from Server\n");
 			} else if (BRAKE_UNLOCKED == cmd_type) {
                 g_hbrake_sta_chged &= 0x7F;
+                printf("recved BRAKE_UNLOCKED ACK from Server\n");
 			} else if (IAP_UPGRADE == cmd_type) {
 				g_iap_update = 1;
 				memset(g_iap_update_url, 0, LEN_DW_URL);
@@ -1187,7 +1197,11 @@ void sim7500e_parse_msg(char* msg)
 u8 sim7500e_setup_connect(void)
 {
 	u8 i = 0;
-	
+
+    // NET NG
+    LED_R = 1;
+    LED_G = 0;
+
 	sim7500dev.tcp_status=0;// IDLE
 	
 	if ((strlen((const char*)g_svr_ip)>0) && (strlen((const char*)g_svr_port)>0)) {
@@ -1244,6 +1258,10 @@ u8 sim7500e_setup_connect(void)
 u8 sim7500e_setup_initial(void)
 {
 	u8 i = 0;
+
+    // NET NG
+    LED_R = 1;
+    LED_G = 0;
 
 	g_cgatt_sta = 0;
 
@@ -1651,6 +1669,7 @@ void sim7500e_mobit_process(u8 index)
 	u8 *pTemp = NULL;
 	u8 data_lenth = 0;
 
+    LED_R = 1;
 	// Received User Data
 	pTemp = (u8*)strstr((const char*)(MOBIT_RX_BUF+U1_RX_LEN_ONE*index), PROTOCOL_HEAD);
 	if (pTemp) {
@@ -1668,6 +1687,9 @@ void sim7500e_mobit_process(u8 index)
 
 		sim7500e_parse_msg((char*)pTemp);
 	}
+
+    delay_ms(20);
+    LED_R = 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////// 
@@ -1711,16 +1733,25 @@ void sim7500e_communication_loop(u8 mode,u8* ipaddr,u8* port)
                 g_hbeaterrcnt++;
                 printf("hbeaterrcnt = %d\r\n",g_hbeaterrcnt);
             } else {
-                sim7500e_idle_actions();
+                // 2000ms
+                if (0 == (timex%40)) {
+                    sim7500e_idle_actions();
+                }
             }
         }
 
+        // 1000ms
         if (0 == (timex%20)) {
             LED_G = !LED_G;
             printf("main_loop test\n");
         }
 
         timex++;
+
+        if (timex >= 10000) {
+            timex = 0;
+        }
+
         delay_ms(50);
     }
 }
