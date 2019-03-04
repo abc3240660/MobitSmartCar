@@ -229,7 +229,7 @@ void system_init(void)
 
 	SIM7000E_RST = 1;
 	delay_ms(1000);
-	
+
 	hc08_init();
 
 	My_RTC_Init();
@@ -245,41 +245,30 @@ void system_init(void)
 	TIM4_Init(9999,8399);
 
 	// 100ms
-	TIM5_Init(999,8399);	
+	TIM5_Init(999,8399);
 
 	VS_Init();
 
 	mpu6050_init();
 
 	do_sd_init();
-	
+
 	spiflash_init();
 
 	create_directories();
-	
-	// CAN1_JumpLamp(5);
-	// CAN1_RingAlarm(5);
-	
+
 	delay_ms(1000);
 	SIM7000E_RST = 0;
-	
-	// do_vs_test();
 }
 
 void SoftReset(void)
 {
-#if 0
-	while (1) {
-		delay_ms(1000);
-	}
-#endif
 	__set_FAULTMASK(1);
 	NVIC_SystemReset();
 }
 
 int main(void)
 {
-    // SCB->VTOR = *((u32 *)0x0800FFF8);
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 	system_init();
 	OSInit();
@@ -336,6 +325,15 @@ void MPU6050_Risk_Check()
 // Play MP3 task
 void lower_task(void *pdata)
 {
+    // for the 1st time report
+    if (0 == KEY_HAND_BRAKE) {// Locked
+        g_hbrake_sta_chged = 0;
+    } else {
+        g_hbrake_sta_chged = 1;
+    }
+
+    g_hbrake_sta_chged |= 0x80;
+
 	while(1) {
 		if (g_mp3_play) {
 			char filename[64] = "";
@@ -362,7 +360,7 @@ void lower_task(void *pdata)
                 g_hbrake_sta_chged |= 0x80;
 			}
 		}
-		
+
     OSTimeDlyHMSM(0,0,0,500);// 500ms
 	}
 }
@@ -470,28 +468,18 @@ void timer_task(void *pdata)
 
 void usart_task(void *pdata)
 {
-	u8 loop_cnt = 0;
+    u8 loop_cnt = 0;
 
-	while (1) {
-		if ((UART5_RX_STA&(1<<15)) != 0) {
-			cpr74_read_calypso();
-			UART5_RX_STA = 0;
-    }
+    while (1) {
+        if ((UART5_RX_STA&(1<<15)) != 0) {
+            cpr74_read_calypso();
+            UART5_RX_STA = 0;
+        }
 
-    if (loop_cnt++ == 10) {
-			loop_cnt = 0;
-			CAN1_JumpLamp(5);
-			//delay_ms(10);
-			//CAN1_JumpLamp(5);
-			//delay_ms(10);
-			//CAN1_JumpLamp(5);
-			//delay_ms(10);
-			//CAN1_JumpLamp(5);
-			//delay_ms(10);
-			//CAN1_JumpLamp(5);
-			// CAN1_RingAlarm(5);
-      printf("pluse_num_new = %d\n", pluse_num_new);
-    }
+        if (loop_cnt++ == 10) {
+            loop_cnt = 0;
+            printf("pluse_num_new = %d\n", pluse_num_new);
+        }
 
 		if (1 == g_dw_write_enable) {
 			if (1 == g_sd_existing) {

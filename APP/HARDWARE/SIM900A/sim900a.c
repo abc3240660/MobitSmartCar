@@ -602,14 +602,16 @@ u8 sim7500e_send_cmd(u8 *cmd, u8 *ack, u16 waittime)
 
 void sim7500e_tcp_send(char* send)
 {
-	printf("SEND:%s\n", send);
-	
-	if(sim7500e_send_cmd("AT+CIPSEND",">",40)==0)
-	{
-		sim7500e_send_cmd((u8*)send,0,500);
-		delay_ms(20);
-		sim7500e_send_cmd((u8*)0X1A,"SEND OK",500);
-	}else sim7500e_send_cmd((u8*)0X1B,"OK",500);
+    if (sim7500e_send_cmd("AT+CIPSEND",">",40)==0) {
+        sim7500e_send_cmd((u8*)send,0,500);
+        delay_ms(20);
+        if (sim7500e_send_cmd((u8*)0X1A,"SEND OK",500)) {
+            printf("[TCP] cannot receive SEND OK!\n");
+        }
+    } else {
+        printf("[TCP] cannot receive > TAG!\n");
+        sim7500e_send_cmd((u8*)0X1B,"OK",500);
+    }
 }
 
 // DEV ACK
