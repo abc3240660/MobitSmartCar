@@ -158,7 +158,7 @@ void do_sd_init()
 	
 	sprintf((char*)sw_ver, "SW_VER = %s", SW_VERSION);
 	
-	write_logs("SIM7000E", (char*)sw_ver, strlen((char*)sw_ver), 2);
+	write_logs("SDTF", (char*)sw_ver, strlen((char*)sw_ver), 2);
 }
 
 void mpu6050_init()
@@ -547,7 +547,7 @@ void HardFault_Handler(void)
 	temp=SCB->AFSR;
 	printf("AFSR:%8X\r\n",temp);
 
-	write_logs("SIM7000E", (char*)"HardFault_Handler -> Reboot\n", strlen((char*)"HardFault_Handler Enter -> Reboot\n"), 3);
+	write_logs("HW ERROR", (char*)"HardFault_Handler -> Reboot\n", strlen((char*)"HardFault_Handler Enter -> Reboot\n"), 3);
 	SoftReset();
 
     LED_G = 0;

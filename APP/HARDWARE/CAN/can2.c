@@ -176,7 +176,7 @@ u8 CAN2_Receive_Msg(u8 *buf)
 
 						//printf("bms xx percent = %d, vot = %d(L%d)\n", g_bms_percent, g_bms_vot, RxMessage.Data[4]);
 			
-            if ((test_cnt_bms>50) || (g_bms_charge_sta_chged&0x80)) {
+            if ((test_cnt_bms>50)/* || (g_bms_charge_sta_chged&0x80)*/) {
                 test_cnt_bms = 0;
 
                 printf("bms percent = %d, vot = %d(L%d)\n", g_bms_percent, g_bms_vot, RxMessage.Data[4]);

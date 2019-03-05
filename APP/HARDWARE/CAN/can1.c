@@ -241,7 +241,7 @@ u8 CAN1_Receive_Msg(u8 *buf)
 
         test_cnt_mc3264++;
 
-        if (test_cnt_mc3264 > 50) {
+        if (test_cnt_mc3264 > 10) {
 						u32 speed = (RxMessage.Data[2]<<8) + RxMessage.Data[1];;
 					
 						// (speed*314*465*3600)/(100*12*1000*1000);
