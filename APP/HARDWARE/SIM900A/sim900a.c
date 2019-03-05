@@ -453,7 +453,7 @@ u8* sim7500e_check_cmd(u8 *str, u8 index)
 	printf("---ACK\n");
 #endif
 
-	printf("02d%02d%02d:CHECK AT_ACK(%d) = %s\n", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds, index, AT_RX_BUF+U1_RX_LEN_ONE*index);
+	printf("%02d%02d%02d:CHECK AT_ACK(%d) = %s\n", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds, index, AT_RX_BUF+U1_RX_LEN_ONE*index);
 
 	// CONNECT's actual result ACK maybe recved 150sec later after "OK"
 	// very very long time wait, so must wait till recved CONNECT or ERROR
@@ -514,7 +514,7 @@ void sim7500e_clear_recved_buf()
 	// Clear All Previous Recved AT-ACK from SIM7000E Except MOBIT MSGs
 	for (i=0; i<U1_RX_BUF_CNT; i++) {
 		if (AT_RX_STA[U1_AT_RX_PRO_ID]&0X8000) {
-				printf("02d%02d%02d:CLEAR AT_ACK(%d) = %s\n", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds, U1_AT_RX_PRO_ID, AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_PRO_ID);
+				printf("%02d%02d%02d:CLEAR AT_ACK(%d) = %s\n", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds, U1_AT_RX_PRO_ID, AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_PRO_ID);
 			
 				if (strstr((const char*)(AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_PRO_ID), "CLOSED")) {
 					sim7500dev.tcp_status = 2;
@@ -552,7 +552,11 @@ u8 sim7500e_send_cmd(u8 *cmd, u8 *ack, u16 waittime)
 	if (strstr((const char*)(cmd), PROTOCOL_HEAD)) {
 		write_logs("SIM7000E", (char*)cmd, strlen((char*)cmd), 1);
 	} else {
-		printf("02d%02d%02d:SIM7000E Send Data %s\n", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds,cmd);
+		if ((u32)cmd <= 0XFF) {
+			printf("%02d%02d%02d:SIM7000E Send Data 0x1A/1B\n", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds);
+		} else {
+			printf("%02d%02d%02d:SIM7000E Send Data %s\n", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds,cmd);
+		}
 	}
 	
 	sim7500e_clear_recved_buf();
@@ -1882,6 +1886,10 @@ void sim7500e_communication_loop(u8 mode,u8* ipaddr,u8* port)
         // 1000ms
         if (0 == (timex%20)) {
             LED_G = !LED_G;
+        }
+
+        // 5000ms
+        if (0 == (timex%100)) {
             printf("main_loop test\n");
         }
 

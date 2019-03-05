@@ -428,7 +428,7 @@ void TIM7_IRQHandler(void)
 			USART1_RX_STA |= 1<<15;
 			USART1_RX_BUF[USART1_RX_STA&0X7FFF] = 0;
 			
-			printf("02d%02d%02d:+++SIM7K TM RECVED %dB:", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds,(USART1_RX_STA&0X7FFF));
+			printf("%02d%02d%02d:+++SIM7K TM RECVED %dB:", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds,(USART1_RX_STA&0X7FFF));
 			printf("%s", USART1_RX_BUF);
 			printf("---\n");
 
