@@ -412,6 +412,8 @@ void TIM6_Int_Init(u16 arr,u16 psc)
 	NVIC_Init(&NVIC_InitStructure); 									 
 }
 
+u8 TEMP_RX_BUF[U1_RX_LEN_ONE] = {0};
+
 void TIM7_IRQHandler(void)
 { 	
 	u8 i = 0;
@@ -437,31 +439,34 @@ void TIM7_IRQHandler(void)
 				DW_RX_STA = USART1_RX_STA;
 				memcpy(DW_RX_BUF, USART1_RX_BUF, (USART1_RX_STA&0X7FFF)+1);
 			} else if ((str = strstr((const char*)USART1_RX_BUF, (const char*)"^MOBIT"))) {
-				u8 mobit_offset = str - (char*)USART1_RX_BUF;
-				// printf("USART1_RX_BUF = %s\n", USART1_RX_BUF);
-				// printf("mobit_offset = %d\n", mobit_offset);
-				if (0 == mobit_offset) {
-					MOBIT_RX_STA[U1_MOBIT_RX_ID] = USART1_RX_STA;
-					memcpy(MOBIT_RX_BUF+U1_RX_LEN_ONE*U1_MOBIT_RX_ID, USART1_RX_BUF, (USART1_RX_STA&0X7FFF)+1);
-				} else {
-					MOBIT_RX_STA[U1_MOBIT_RX_ID] = USART1_RX_STA-mobit_offset;
-					memcpy(MOBIT_RX_BUF+U1_RX_LEN_ONE*U1_MOBIT_RX_ID, str, (USART1_RX_STA&0X7FFF-mobit_offset)+1);
-					
-					AT_RX_STA[U1_AT_RX_ID] = mobit_offset;
-					AT_RX_STA[U1_AT_RX_ID] |= (1<<15);
-					memset(AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID, 0, U1_RX_LEN_ONE);
-					memcpy(AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID, USART1_RX_BUF, mobit_offset);
-					
-					printf("TM RECVED X1(%d) = %s\n", U1_AT_RX_ID, AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID);
-					// next index for use
-					U1_AT_RX_ID = (U1_AT_RX_ID+1)%U1_RX_BUF_CNT;
-				}
+				u8 k = 0;
 
-				printf("TM RECVED X2(%d) = %s\n", U1_MOBIT_RX_ID, MOBIT_RX_BUF+U1_RX_LEN_ONE*U1_MOBIT_RX_ID);
-				// next index for use
-				U1_MOBIT_RX_ID = (U1_MOBIT_RX_ID+1)%U1_RX_BUF_CNT;
-				
-				// printf("U1_AT_RX_ID=%d, U1_MOBIT_RX_ID=%d\n", U1_AT_RX_ID, U1_MOBIT_RX_ID);
+				for (i=0; i<(USART1_RX_STA&0X7FFF); i++) {
+					TEMP_RX_BUF[k] = USART1_RX_BUF[i];
+					k++;
+					
+					if (('\n'==TEMP_RX_BUF[k-1]) && (k > 2)) {
+						TEMP_RX_BUF[k] = '\0';
+
+						if ((str = strstr((const char*)TEMP_RX_BUF, (const char*)"^MOBIT"))) {
+							MOBIT_RX_STA[U1_MOBIT_RX_ID] = k;
+							MOBIT_RX_STA[U1_MOBIT_RX_ID] |= (1<<15);
+							memcpy(MOBIT_RX_BUF+U1_RX_LEN_ONE*U1_MOBIT_RX_ID, TEMP_RX_BUF, k+1);
+							printf("TM RECVED X2(%d) = %s\n", U1_MOBIT_RX_ID, MOBIT_RX_BUF+U1_RX_LEN_ONE*U1_MOBIT_RX_ID);
+							// next index for use
+							U1_MOBIT_RX_ID = (U1_MOBIT_RX_ID+1)%U1_RX_BUF_CNT;
+						} else {
+							AT_RX_STA[U1_AT_RX_ID] = k;
+							AT_RX_STA[U1_AT_RX_ID] |= (1<<15);
+							memcpy(AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID, TEMP_RX_BUF, k+1);
+							printf("TM RECVED X1(%d) = %s\n", U1_AT_RX_ID, AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID);
+							// next index for use
+							U1_AT_RX_ID = (U1_AT_RX_ID+1)%U1_RX_BUF_CNT;
+						}
+						
+						k = 0;
+					}
+				}
 			} else {
 				AT_RX_STA[U1_AT_RX_ID] = USART1_RX_STA;
 				memcpy(AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID, USART1_RX_BUF, (USART1_RX_STA&0X7FFF)+1);
