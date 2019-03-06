@@ -155,7 +155,7 @@ u8 CAN2_Receive_Msg(u8 *buf)
 			if (0x02 == (RxMessage.Data[0]&0x2)) {// battery charging
 				if (0 == g_bms_charge_sta_chged) {
 					g_bms_charge_sta_chged = 1;
-					printf("bms charge sta = 0\n");
+					printf("bms charge sta = 1\n");
 					g_bms_charged_times++;
 					sys_env_init();
 

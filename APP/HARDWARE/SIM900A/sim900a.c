@@ -715,10 +715,10 @@ void sim7500e_do_query_car_ack()
 	}
 
 	car_status[0] = (g_car_sta&BIT_HAND_BRAKE)?'1':'0';
-	car_status[1] = 0;//(g_car_sta&BIT_FAR_LED)?'1':'0';
-	car_status[2] = 0;//(g_car_sta&BIT_NEAR_LED)?'1':'0';
-	car_status[3] = 0;//(g_car_sta&BIT_FOG_LED)?'1':'0';
-	car_status[4] = 0;//(g_car_sta&BIT_CLEAR_LED)?'1':'0';
+	car_status[1] = '0';//(g_car_sta&BIT_FAR_LED)?'1':'0';
+	car_status[2] = '0';//(g_car_sta&BIT_NEAR_LED)?'1':'0';
+	car_status[3] = '0';//(g_car_sta&BIT_FOG_LED)?'1':'0';
+	car_status[4] = '0';//(g_car_sta&BIT_CLEAR_LED)?'1':'0';
 	car_status[5] = (g_car_sta&BIT_LEFT_DOOR)?'1':'0';
 	car_status[6] = (g_car_sta&BIT_RIGHT_DOOR)?'1':'0';
 	car_status[7] = (g_car_sta >> 8) + '0';
@@ -905,10 +905,10 @@ void sim7500e_do_heart_beat_auto()
 	}
 
 	car_status[0] = (g_car_sta&BIT_HAND_BRAKE)?'1':'0';
-	car_status[1] = 0;//(g_car_sta&BIT_FAR_LED)?'1':'0';
-	car_status[2] = 0;//(g_car_sta&BIT_NEAR_LED)?'1':'0';
-	car_status[3] = 0;//(g_car_sta&BIT_FOG_LED)?'1':'0';
-	car_status[4] = 0;//(g_car_sta&BIT_CLEAR_LED)?'1':'0';
+	car_status[1] = '0';//(g_car_sta&BIT_FAR_LED)?'1':'0';
+	car_status[2] = '0';//(g_car_sta&BIT_NEAR_LED)?'1':'0';
+	car_status[3] = '0';//(g_car_sta&BIT_FOG_LED)?'1':'0';
+	car_status[4] = '0';//(g_car_sta&BIT_CLEAR_LED)?'1':'0';
 	car_status[5] = (g_car_sta&BIT_LEFT_DOOR)?'1':'0';
 	car_status[6] = (g_car_sta&BIT_RIGHT_DOOR)?'1':'0';
 	car_status[7] = (g_car_sta >> 8) + '0';
@@ -929,7 +929,7 @@ void sim7500e_do_heart_beat_auto()
 	g_bms_percent = 8888;
 
 	memset(send_buf, 0, LEN_MAX_SEND);
-	sprintf(send_buf, "%s,%s,%s,%s,%s,%d,%s,%s,%s,%s$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_HEART_BEAT, dev_time, (g_drlock_sta_chged&0x7F), g_rssi_sim, g_bms_vot_str, g_bms_percent_str, car_status);
+	sprintf(send_buf, "%s,%s,%s,%s,%s,%d,%s,%s,%s,%s$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_HEART_BEAT, dev_time, ((~g_drlock_sta_chged)&0x01), g_rssi_sim, g_bms_vot_str, g_bms_percent_str, car_status);
 	
 	sim7500e_tcp_send(send_buf);
 }

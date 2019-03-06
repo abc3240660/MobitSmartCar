@@ -81,6 +81,8 @@ extern u8 USART1_RX_BUF_BAK[U1_RX_LEN_ONE];
 extern u32 os_jiffies;
 int g_mpu_sta = 0;
 
+u8 hbrake_bound_cnt = 0;
+
 extern u8 g_gps_active;
 extern u16 g_gps_trace_gap;
 extern u32 g_time_start_gps;
@@ -325,6 +327,7 @@ void MPU6050_Risk_Check()
 // Play MP3 task
 void lower_task(void *pdata)
 {
+#if 0
     // for the 1st time report
     if (0 == KEY_HAND_BRAKE) {// Locked
         g_hbrake_sta_chged = 0;
@@ -333,6 +336,9 @@ void lower_task(void *pdata)
     }
 
     g_hbrake_sta_chged |= 0x80;
+#endif
+
+    g_hbrake_sta_chged = 8;
 
 	while(1) {
 		if (g_mp3_play) {
@@ -351,15 +357,29 @@ void lower_task(void *pdata)
 
 		if (0 == KEY_HAND_BRAKE) {// Locked
 			//printf("g_hbrake_sta_chged LA = 0x%.2x\n", g_hbrake_sta_chged);
-			if (1 == (g_hbrake_sta_chged&0x7F)) {
-				g_hbrake_sta_chged = 0;
-                g_hbrake_sta_chged |= 0x80;
-			}
+			if ((g_hbrake_sta_chged&0x7F) != 0) {
+                if (hbrake_bound_cnt >= 3) {
+                    hbrake_bound_cnt = 0;
+                    g_hbrake_sta_chged = 0;
+                    g_hbrake_sta_chged |= 0x80;
+                }
+
+                hbrake_bound_cnt++
+            } else {
+                hbrake_bound_cnt = 0;
+            }
 		} else {// Unlocked
 			//printf("g_hbrake_sta_chged FA = 0x%.2x\n", g_hbrake_sta_chged);
-			if (0 == (g_hbrake_sta_chged&0x7F)) {
-				g_hbrake_sta_chged = 1;
-                g_hbrake_sta_chged |= 0x80;
+			if ((g_hbrake_sta_chged&0x7F) != 1) {
+                if (hbrake_bound_cnt >= 3) {
+                    hbrake_bound_cnt = 0;
+                    g_hbrake_sta_chged = 1;
+                    g_hbrake_sta_chged |= 0x80;
+                }
+
+                hbrake_bound_cnt++
+            } else {
+                hbrake_bound_cnt = 0;
 			}
 		}
 

@@ -245,7 +245,7 @@ u8 CAN1_Receive_Msg(u8 *buf)
 						u32 speed = (RxMessage.Data[2]<<8) + RxMessage.Data[1];;
 					
 						// (speed*314*465*3600)/(100*12*1000*1000);
-						speed = (speed*314*93*3)/(1*1*200*1000);
+						speed = (speed*314*93*3)/(1*1*200*1000*60);
 						printf("speed = %d KM/H\n", speed);
 
             memset(log_msg, 0, 64);
