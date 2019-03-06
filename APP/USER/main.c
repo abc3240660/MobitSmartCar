@@ -364,7 +364,7 @@ void lower_task(void *pdata)
                     g_hbrake_sta_chged |= 0x80;
                 }
 
-                hbrake_bound_cnt++
+                hbrake_bound_cnt++;
             } else {
                 hbrake_bound_cnt = 0;
             }
@@ -377,7 +377,7 @@ void lower_task(void *pdata)
                     g_hbrake_sta_chged |= 0x80;
                 }
 
-                hbrake_bound_cnt++
+                hbrake_bound_cnt++;
             } else {
                 hbrake_bound_cnt = 0;
 			}
