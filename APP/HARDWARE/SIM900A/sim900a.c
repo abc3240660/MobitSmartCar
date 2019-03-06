@@ -128,6 +128,8 @@ vu16 MOBIT_RX_STA[U1_RX_BUF_CNT];
 
 vu16 DW_RX_STA = 0;
 
+u32 g_need_ack = 0;
+
 const char* cmd_list[] = {
 	CMD_DEV_REGISTER,
 	CMD_HEART_BEAT,
@@ -474,7 +476,7 @@ u8* sim7500e_check_cmd(u8 *str, u8 index)
 	}
 	
 	if (strx != NULL) {
-        if (0 == strncmp((const char*)strx, "SEND OK", strlen("SEND OK"))) {
+        if (0 == strncmp((const char*)strx, "SEND ", strlen("SEND "))) {
             g_hbeaterrcnt = 0;
         }
 
@@ -622,18 +624,23 @@ u8 sim7500e_send_cmd(u8 *cmd, u8 *ack, u16 waittime)
 void sim7500e_tcp_send(char* send)
 {
 		u8 err = 0;
+		u8 try_cnt = 2;
 		OSSemPend(sem_atsend,0,&err);
 	
-    if (sim7500e_send_cmd("AT+CIPSEND",">",40)==0) {
-        sim7500e_send_cmd((u8*)send,0,500);
-        delay_ms(20);
-        if (sim7500e_send_cmd((u8*)0X1A,"SEND OK",500)) {
-            printf("[TCP] cannot receive SEND OK!\n");
-        }
-    } else {
-        printf("[TCP] cannot receive > TAG!\n");
-        sim7500e_send_cmd((u8*)0X1B,"OK",500);
-    }
+		while (try_cnt--) {
+			if (sim7500e_send_cmd("AT+CIPSEND",">",40)==0) {
+					sim7500e_send_cmd((u8*)send,0,500);
+					delay_ms(20);
+					if (sim7500e_send_cmd((u8*)0X1A,"SEND ",500)) {// SEND OK
+							printf("[TCP] cannot receive SEND OK!\n");
+					} else {
+						break;
+					}
+			} else {
+					printf("[TCP] cannot receive > TAG!\n");
+					sim7500e_send_cmd((u8*)0X1B,"OK",500);
+			}
+		}
 		
 		OSSemPost(sem_atsend);
 }
@@ -641,8 +648,6 @@ void sim7500e_tcp_send(char* send)
 // DEV ACK
 void sim7500e_do_engine_start_ack()
 {
-	CAN1_StartEngine();
-
 	memset(send_buf_main, 0, LEN_MAX_SEND);
 	sprintf(send_buf_main, "%s,%s,%s,%s,%s,%d$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_DEV_ACK, CMD_ENGINE_START, g_power_state);
 
@@ -652,9 +657,6 @@ void sim7500e_do_engine_start_ack()
 // DEV ACK
 void sim7500e_do_lock_door_ack()
 {
-	CAN1_CloseDoor();
-	// CAN1_StopEngine();
-
 	memset(send_buf_main, 0, LEN_MAX_SEND);
 	sprintf(send_buf_main, "%s,%s,%s,%s,%s,%d$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_DEV_ACK, CMD_LOCK_DOOR, g_power_state);
 
@@ -664,8 +666,6 @@ void sim7500e_do_lock_door_ack()
 // DEV ACK
 void sim7500e_do_unlock_door_ack()
 {
-	CAN1_OpenDoor();
-
 	memset(send_buf_main, 0, LEN_MAX_SEND);
 	sprintf(send_buf_main, "%s,%s,%s,%s,%s,%d$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_DEV_ACK, CMD_UNLOCK_DOOR, g_door_state);
 
@@ -675,8 +675,6 @@ void sim7500e_do_unlock_door_ack()
 // DEV ACK
 void sim7500e_do_jump_lamp_ack()
 {
-	CAN1_JumpLamp(g_lamp_times);
-
 	memset(send_buf_main, 0, LEN_MAX_SEND);
 	sprintf(send_buf_main, "%s,%s,%s,%s,%s$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_DEV_ACK, CMD_JUMP_LAMP);
 
@@ -686,8 +684,6 @@ void sim7500e_do_jump_lamp_ack()
 // DEV ACK
 void sim7500e_do_ring_alarm_ack()
 {
-	CAN1_RingAlarm(g_ring_times);
-
 	memset(send_buf_main, 0, LEN_MAX_SEND);
 	sprintf(send_buf_main, "%s,%s,%s,%s,%s$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_DEV_ACK, CMD_RING_ALARM);
 
@@ -1108,30 +1104,35 @@ void sim7500e_parse_msg(char* msg)
 						data_pos = index;
 						// printf("data_pos = %d, cmd_type = %d\n", data_pos, cmd_type);
 					}
-					
+
 					// No need Parse extra params
-					if (UNLOCK_DOOR == cmd_type) {
-						sim7500e_do_unlock_door_ack();
-					} else if (ENGINE_START == cmd_type) {
-						sim7500e_do_engine_start_ack();
-					} else if (LOCK_DOOR == cmd_type) {
-						sim7500e_do_lock_door_ack();
-					} else if (QUERY_PARAMS == cmd_type) {
-						sim7500e_do_query_params_ack();
-					} else if (QUERY_CAR == cmd_type) {
-						sim7500e_do_query_car_ack();
-					} else if (DEV_SHUTDOWN == cmd_type) {
-						sim7500e_do_dev_shutdown_ack();
-					} else if (QUERY_GPS == cmd_type) {
-						sim7500e_do_query_gps_ack();
-					} else if (QUERY_BMS == cmd_type) {
-						sim7500e_do_query_bms_ack();
-					} else if (QUERY_MP3 == cmd_type) {
-						sim7500e_do_query_mp3_ack();
-					} else if (STOP_TRACE == cmd_type) {
-						g_gps_trace_gap = 0;
-						printf("g_gps_trace_gap = %d\n", g_gps_trace_gap);
-						sim7500e_do_stop_trace_ack();
+          if (UNLOCK_DOOR == cmd_type) {
+						CAN1_OpenDoor();
+            g_need_ack |= (1<<cmd_type);
+          } else if (ENGINE_START == cmd_type) {
+						CAN1_StartEngine();
+            g_need_ack |= (1<<cmd_type);
+          } else if (LOCK_DOOR == cmd_type) {
+						CAN1_CloseDoor();
+						CAN1_StopEngine();
+            g_need_ack |= (1<<cmd_type);
+          } else if (QUERY_PARAMS == cmd_type) {
+                g_need_ack |= (1<<cmd_type);
+          } else if (QUERY_CAR == cmd_type) {
+                g_need_ack |= (1<<cmd_type);
+          } else if (DEV_SHUTDOWN == cmd_type) {
+                g_need_ack |= (1<<cmd_type);
+          } else if (QUERY_GPS == cmd_type) {
+                g_need_ack |= (1<<cmd_type);
+          } else if (QUERY_BMS == cmd_type) {
+                g_need_ack |= (1<<cmd_type);
+          } else if (QUERY_MP3 == cmd_type) {
+                g_need_ack |= (1<<cmd_type);
+          } else if (STOP_TRACE == cmd_type) {
+								g_gps_trace_gap = 0;
+								printf("g_gps_trace_gap = %d\n", g_gps_trace_gap);
+						
+								g_need_ack |= (1<<cmd_type);
 					} else if (HEART_BEAT == cmd_type) {
 					// Do nothing
 					} else if (DOOR_LOCKED == cmd_type) {
@@ -1182,13 +1183,14 @@ void sim7500e_parse_msg(char* msg)
 				memset(g_iap_update_url, 0, LEN_DW_URL);
 				strncpy((char*)g_iap_update_url, split_str, LEN_DW_URL);
 				printf("g_iap_update_url = %s\n", g_iap_update_url);
-				sim7500e_do_iap_upgrade_ack();
+				
+				g_need_ack |= (1<<cmd_type);
 			} else if (MP3_PLAY == cmd_type) {
 				memset(g_mp3_play_name, 0, LEN_FILE_NAME);
 				strncpy((char*)g_mp3_play_name, split_str, LEN_FILE_NAME);
 				printf("g_mp3_play_name = %s\n", g_mp3_play_name);
 				
-				sim7500e_do_mp3_play_ack();
+				g_need_ack |= (1<<cmd_type);
 			} else if (MP3_UPDATE == cmd_type) {
 				if (4 == index) {
 					memset(g_mp3_update_name, 0, LEN_FILE_NAME);
@@ -1218,15 +1220,20 @@ void sim7500e_parse_msg(char* msg)
                     g_gps_trace_gap = 5;
                     printf("change g_gps_trace_gap = %d\n", g_gps_trace_gap);
                 }
-				sim7500e_do_start_trace_ack();
+
+				g_need_ack |= (1<<cmd_type);
 			} else if (RING_ALARM == cmd_type) {
 				g_ring_times = atoi(split_str);
 				printf("g_ring_times = %d\n", g_ring_times);
-				sim7500e_do_ring_alarm_ack();
+
+				CAN1_RingAlarm(g_ring_times);
+				g_need_ack |= (1<<cmd_type);
 			} else if (JUMP_LAMP == cmd_type) {
 				g_lamp_times = atoi(split_str);
 				printf("g_lamp_times = %d\n", g_lamp_times);
-				sim7500e_do_jump_lamp_ack();
+
+				CAN1_JumpLamp(g_lamp_times);
+				g_need_ack |= (1<<cmd_type);
 			}
 		}
 		split_str = strtok(NULL, delims);
@@ -1436,9 +1443,6 @@ u8 sim7500e_setup_initial(void)
 	}
 
 	delay_ms(500);
-		
-	// Temp Test
-	// CAN1_JumpLamp(g_lamp_times);
 
 	return sim7500e_setup_connect();
 }
@@ -1830,6 +1834,93 @@ void sim7500e_mobit_process(u8 index)
     LED_R = 0;
 }
 
+void sim7500e_mobit_msg_ack(void)
+{
+    // Two Path to Control SIM700E
+    // 1: sim7500e_communication_loop
+    // 2: sim7500e_mobit_process
+    // Must Be Careful!!!
+    // If ACK Confused, Please Move AT-Send from sim7500e_mobit_process into here
+    // Warning: send_buf will be used in two place!!!
+				
+    // CMD_QUERY_PARAMS,
+    if (g_need_ack & (1<<QUERY_PARAMS)) {
+			g_need_ack &= ~(1<<QUERY_PARAMS);
+			sim7500e_do_query_params_ack();
+    // CMD_RING_ALARM,
+    } else if (g_need_ack & (1<<RING_ALARM)) {
+      g_need_ack &= ~(1<<RING_ALARM);
+			sim7500e_do_ring_alarm_ack();
+    // CMD_UNLOCK_DOOR,
+    } else if (g_need_ack & (1<<UNLOCK_DOOR)) {
+			g_need_ack &= ~(1<<UNLOCK_DOOR);
+			sim7500e_do_unlock_door_ack();
+    // CMD_JUMP_LAMP,
+    } else if (g_need_ack & (1<<JUMP_LAMP)) {
+      g_need_ack &= ~(1<<JUMP_LAMP);
+			sim7500e_do_jump_lamp_ack();
+    // CMD_ENGINE_START,
+    } else if (g_need_ack & (1<<ENGINE_START)) {
+      g_need_ack &= ~(1<<ENGINE_START);
+			sim7500e_do_engine_start_ack();
+    // CMD_DEV_SHUTDOWN,
+    } else if (g_need_ack & (1<<DEV_SHUTDOWN)) {
+			g_need_ack &= ~(1<<DEV_SHUTDOWN);
+			sim7500e_do_dev_shutdown_ack();
+    // CMD_QUERY_GPS,
+    } else if (g_need_ack & (1<<QUERY_GPS)) {
+			g_need_ack &= ~(1<<QUERY_GPS);
+			sim7500e_do_query_gps_ack();
+    // CMD_IAP_UPGRADE,
+    } else if (g_need_ack & (1<<IAP_UPGRADE)) {
+      g_need_ack &= ~(1<<IAP_UPGRADE);
+			sim7500e_do_iap_upgrade_ack();
+    // CMD_MP3_UPDATE,
+    } else if (g_need_ack & (1<<MP3_UPDATE)) {
+      g_need_ack &= ~(1<<MP3_UPDATE);
+    // CMD_MP3_PLAY,
+    } else if (g_need_ack & (1<<MP3_PLAY)) {
+      g_need_ack &= ~(1<<MP3_PLAY);
+			sim7500e_do_mp3_play_ack();
+    // CMD_START_TRACE,
+    } else if (g_need_ack & (1<<START_TRACE)) {
+      g_need_ack &= ~(1<<START_TRACE);
+			sim7500e_do_start_trace_ack();
+		// CMD_STOP_TRACE,
+    } else if (g_need_ack & (1<<STOP_TRACE)) {
+      g_need_ack &= ~(1<<STOP_TRACE);
+			sim7500e_do_stop_trace_ack();
+    // CMD_QUERY_BMS,
+    } else if (g_need_ack & (1<<QUERY_BMS)) {
+			g_need_ack &= ~(1<<QUERY_BMS);
+			sim7500e_do_query_bms_ack();
+    // CMD_QUERY_MP3,
+    } else if (g_need_ack & (1<<QUERY_MP3)) {
+			g_need_ack &= ~(1<<QUERY_MP3);
+			sim7500e_do_query_mp3_ack();
+    // CMD_QUERY_CAR,
+    } else if (g_need_ack & (1<<QUERY_CAR)) {
+			g_need_ack &= ~(1<<QUERY_CAR);
+			sim7500e_do_query_car_ack();
+    // CMD_ENGINE_STOP,
+    } else if (g_need_ack & (1<<LOCK_DOOR)) {
+      g_need_ack &= ~(1<<LOCK_DOOR);
+			sim7500e_do_lock_door_ack();
+    // CMD_DOOR_OPENED,
+    } else if (g_need_ack & (1<<DOOR_OPENED)) {
+      g_need_ack &= ~(1<<DOOR_OPENED);
+    // CMD_DOOR_CLOSED,
+    } else if (g_need_ack & (1<<DOOR_CLOSED)) {
+      g_need_ack &= ~(1<<DOOR_CLOSED);
+    // CMD_BRAKE_LOCKED,
+    } else if (g_need_ack & (1<<BRAKE_LOCKED)) {
+      g_need_ack &= ~(1<<BRAKE_LOCKED);
+    // CMD_BRAKE_UNLOCKED,
+    } else if (g_need_ack & (1<<BRAKE_UNLOCKED)) {
+      g_need_ack &= ~(1<<BRAKE_UNLOCKED);
+    }
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 void sim7500e_communication_loop(u8 mode,u8* ipaddr,u8* port)
 {
@@ -1876,6 +1967,8 @@ void sim7500e_communication_loop(u8 mode,u8* ipaddr,u8* port)
                 g_hbeaterrcnt++;
                 printf("hbeaterrcnt = %d\r\n",g_hbeaterrcnt);
             } else {
+								sim7500e_mobit_msg_ack();
+
                 // 2000ms
                 if (0 == (timex%40)) {
                     sim7500e_idle_actions();
