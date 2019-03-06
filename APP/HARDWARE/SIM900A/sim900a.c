@@ -1173,8 +1173,8 @@ void sim7500e_parse_msg(char* msg)
                     g_time_start_hbeat = os_jiffies;
 					g_hbeat_gap = atoi(split_str);
 					printf("g_hbeat_gap = %d\n", g_hbeat_gap);
-                    if (g_hbeaterrcnt < 5) {
-                        g_hbeaterrcnt = 5;
+                    if (g_hbeat_gap < 5) {
+                        g_hbeat_gap = 5;
                         printf("change g_hbeat_gap = %d\n", g_hbeat_gap);
                     }
 				}
