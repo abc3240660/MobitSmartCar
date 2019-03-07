@@ -6,6 +6,8 @@
 #include "timer.h"
 #include "ucos_ii.h"
 #include "malloc.h"
+#include "can1.h"
+#include "delay.h"
 
 #define SET_GPS_GAP "SET-GPS-GAP="
 #define SET_HBEAT_GAP "SET-HBEAT-GAP="
@@ -15,6 +17,7 @@
 #define TRIg_bms_charged_timesRTED "TRIG-CHARGE-STARTED"
 #define TRIG_CHARGE_STOPED "TRIG-CHARGE-STOPED"
 #define PLAY_MP3_MUSIC "PLAY-MP3="
+#define SET_PEPS "SET-PEPS="
 
 extern int g_hbeat_gap;
 extern u8 g_drlock_sta_chged;
@@ -60,6 +63,8 @@ int fputc(int ch, FILE *f)
 
 void debug_process(void)
 {
+    u8 test_mode = 0;
+
 	if (0 == strncmp((const char*)USART_RX_BUF, SET_GPS_GAP, strlen(SET_GPS_GAP))) {
 		g_gps_trace_gap = atoi((const char*)(USART_RX_BUF+strlen(SET_GPS_GAP)));
 		printf("g_gps_trace_gap = %d\n", g_gps_trace_gap);
@@ -80,6 +85,37 @@ void debug_process(void)
 	} else if (0 == strncmp((const char*)USART_RX_BUF, TRIG_CHARGE_STOPED, strlen(TRIG_CHARGE_STOPED))) {
 		g_bms_charge_sta_chged = 0;
 		g_bms_charge_sta_chged |= 0x80; 
+	} else if (0 == strncmp((const char*)USART_RX_BUF, SET_PEPS, strlen(SET_PEPS))) {
+        test_mode = atoi((const char*)(USART_RX_BUF+strlen(SET_PEPS)));
+        if (0 == test_mode) {
+            CAN1_JumpLamp(5);
+        } else if (1 == test_mode) {
+            CAN1_RingAlarm(5);
+        } else if (2 == test_mode) {
+            CAN1_StartEngine();
+        } else if (3 == test_mode) {
+            CAN1_StopEngine();
+        } else if (4 == test_mode) {
+            CAN1_OpenDoor();
+        } else if (5 == test_mode) {
+            CAN1_CloseDoor();
+        } else if (6 == test_mode) {
+            CAN1_Wakeup();
+            CAN1_JumpLamp(5);
+        } else if (7 == test_mode) {
+            CAN1_Wakeup();
+            CAN1_Wakeup();
+            CAN1_JumpLamp(5);
+        } else if (8 == test_mode) {
+            CAN1_Wakeup();
+            CAN1_StopEngine();
+        } else if (9 == test_mode) {
+            CAN1_Wakeup();
+            CAN1_Wakeup();
+            CAN1_StopEngine();
+        } else {
+            CAN1_JumpLamp(5);
+        }
 	} else if (0 == strncmp((const char*)USART_RX_BUF, PLAY_MP3_MUSIC, strlen(PLAY_MP3_MUSIC))) {
 		memset(g_mp3_play_name, 0, LEN_FILE_NAME);
 		strncpy((char*)g_mp3_play_name, (const char*)(USART_RX_BUF+strlen(PLAY_MP3_MUSIC)), LEN_FILE_NAME);
