@@ -441,6 +441,8 @@ u8 CAN1_StartEngine(void)
 	CAN1_Wakeup();
 	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
 
+	g_peps_req |= BIT_PEPS_ENGINE;
+	
 	printf("%02d%02d%02d:PEPS StartEngine...\n", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds);
 
 	return 0;
@@ -469,6 +471,8 @@ u8 CAN1_StopEngine(void)
 
 	CAN1_Wakeup();
 	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
+
+	g_peps_req |= BIT_PEPS_ENGINE_STOP;
 
 	printf("%02d%02d%02d:PEPS StopEngine...\n", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds);
 	
@@ -499,6 +503,8 @@ u8 CAN1_OpenDoor(void)
 	CAN1_Wakeup();
 	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
 
+	g_peps_req |= BIT_PEPS_UNLOCK;
+	
 	printf("%02d%02d%02d:PEPS OpenDoor...\n", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds);
 	
 	return 0;
@@ -528,6 +534,8 @@ u8 CAN1_CloseDoor(void)
 	CAN1_Wakeup();
 	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
 
+	g_peps_req |= BIT_PEPS_LOCK;
+	
 	printf("%02d%02d%02d:PEPS CloseDoor...\n", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds);
 
 	return 0;
