@@ -272,6 +272,8 @@ u8 CAN1_StartEngine(void)
 {
 	u8 can1_sendbuf[8]={0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 	
+    printf("PEPS StartEngine...\n");
+
 	CAN1_Wakeup();
 	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
 	
@@ -282,6 +284,8 @@ u8 CAN1_StopEngine(void)
 {
 	u8 can1_sendbuf[8]={0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 	
+    printf("PEPS StopEngine...\n");
+
 	CAN1_Wakeup();
 	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
 	
@@ -292,6 +296,8 @@ u8 CAN1_OpenDoor(void)
 {
 	u8 can1_sendbuf[8]={0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 	
+    printf("PEPS OpenDoor...\n");
+
 	CAN1_Wakeup();
 	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
 	
@@ -302,6 +308,8 @@ u8 CAN1_CloseDoor(void)
 {
 	u8 can1_sendbuf[8]={0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 	
+    printf("PEPS CloseDoor...\n");
+
 	CAN1_Wakeup();
 	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
 	
@@ -312,6 +320,8 @@ u8 CAN1_JumpLamp(u8 times)
 {
 	u8 can1_sendbuf[8]={0x01, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 	
+    printf("PEPS JumpLamp...\n");
+
 	CAN1_Wakeup();
 	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
 	
@@ -322,6 +332,8 @@ u8 CAN1_RingAlarm(u8 times)
 {
 	u8 can1_sendbuf[8]={0x02, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00};
 	
+    printf("PEPS RingAlarm...\n");
+
 	CAN1_Wakeup();
 	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
 	
