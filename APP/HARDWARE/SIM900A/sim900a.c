@@ -705,9 +705,9 @@ void sim7500e_do_query_car_ack()
 	u8 car_status[12] = "";
 
 	if (0 == KEY_HAND_BRAKE) {
-		g_car_sta &= ~(1<<BIT_HAND_BRAKE);// Locked
+		g_car_sta &= ~BIT_HAND_BRAKE;// Locked
 	} else {
-		g_car_sta |= (1<<BIT_HAND_BRAKE);// Unlocked
+		g_car_sta |= BIT_HAND_BRAKE;// Unlocked
 	}
 
 	car_status[0] = (g_car_sta&BIT_HAND_BRAKE)?'1':'0';
@@ -895,9 +895,9 @@ void sim7500e_do_heart_beat_auto()
 
 
 	if (0 == KEY_HAND_BRAKE) {
-		g_car_sta &= ~(1<<BIT_HAND_BRAKE);// Locked
+		g_car_sta &= ~BIT_HAND_BRAKE;// Locked
 	} else {
-		g_car_sta |= (1<<BIT_HAND_BRAKE);// Unlocked
+		g_car_sta |= BIT_HAND_BRAKE;// Unlocked
 	}
 
 	car_status[0] = (g_car_sta&BIT_HAND_BRAKE)?'1':'0';

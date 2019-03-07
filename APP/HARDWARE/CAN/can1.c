@@ -7,6 +7,35 @@ u16 test_cnt_mc3264 = 0;
 
 u32 can1_rx_cnt = 0;
 
+
+#define BIT_PEPS_LOCK					(1 << 0)
+#define BIT_PEPS_ENGINE				(1 << 1)
+#define BIT_PEPS_LAMP   			(1 << 2)
+#define BIT_PEPS_ALARM				(1 << 3)
+#define BIT_PEPS_UNLOCK				(1 << 4)
+#define BIT_PEPS_ENGINE_STOP	(1 << 5)
+
+// BIT0-lock status
+// BIT1-engine status
+// BIT2-lamp status
+// BIT3-alarm status
+u8 g_peps_sta = 0;
+
+// BIT0-lock request
+// BIT1-engine request
+// BIT2-lamp request
+// BIT3-alarm request
+u8 g_peps_req = 0;
+
+u8 g_relamp_cnt = 0;
+u8 g_realarm_cnt = 0;
+
+u8 g_relock_cnt = 0;
+u8 g_reunlock_cnt = 0;
+
+u8 g_restart_engine_cnt = 0;
+u8 g_restop_engine_cnt = 0;
+
 extern u16 g_car_sta;
 extern u8 g_door_state;
 extern u8 g_power_state;
@@ -15,6 +44,12 @@ extern u8 g_drlock_sta_chged;
 extern u8 g_dropen_sta_chged;
 
 void write_logs(char *module, char *log, u16 size, u8 mode);
+u8 CAN1_JumpLamp_no_delay(u8 times);
+u8 CAN1_RingAlarm_no_delay(u8 times);
+u8 CAN1_OpenDoor_no_delay(void);
+u8 CAN1_CloseDoor_no_delay(void);
+u8 CAN1_StartEngine_no_delay(void);
+u8 CAN1_StopEngine_no_delay(void);
 /****************************************************************************
 * 名    称: u8 CAN1_Mode_Init(u8 mode)
 * 功    能：CAN初始化
@@ -156,6 +191,32 @@ u8 CAN1_Send_Msg(u8* msg,u8 len)
   return 0;		
 }
 
+u8 CAN1_Send_Msg_no_delay(u8* msg,u8 len)
+{	
+  u8 mbox;
+  u16 i=0;
+  CanTxMsg TxMessage;
+	u32 can1_rx_cnt_old = can1_rx_cnt;
+	
+  TxMessage.StdId=0x78563412;	 // 标准标识符为0
+  TxMessage.ExtId=0x1004C899;	 // 设置扩展标示符（29位）
+  TxMessage.IDE=CAN_ID_EXT;		   // 使用扩展标识符
+  TxMessage.RTR=0;		   // 消息类型为数据帧，一帧8位
+  TxMessage.DLC=len;	   // 发送两帧信息
+  for(i=0;i<len;i++)
+  TxMessage.Data[i]=msg[i];				 // 第一帧信息          
+	
+  mbox= CAN_Transmit(CAN1, &TxMessage);   
+  i=0;
+  // while((CAN_TransmitStatus(CAN1, mbox)==CAN_TxStatus_Failed)&&(i<0XFFF))i++;	//等待发送结束
+	while((CAN_TransmitStatus(CAN1, mbox)==CAN_TxStatus_Failed)) {
+		i++;
+		delay_ms(1);
+	}
+	
+  if(i>=0XFFF)return 1;
+  return 0;		
+}
 /****************************************************************************
 * 名    称: u8 CAN1_Receive_Msg(u8 *buf)
 * 功    能：can口接收数据查询
@@ -185,12 +246,16 @@ u8 CAN1_Receive_Msg(u8 *buf)
 	// BIT1-ring: 0-OFF / 1-ON
 	if (0x100850C8 == RxMessage.ExtId) {// PEPS
 		if (0x02 == (RxMessage.Data[0]&0x2)) {// locked
+			g_peps_sta |= BIT_PEPS_LOCK;// locked
+
 			if (1 == (g_drlock_sta_chged&0x7F)) {
 				g_drlock_sta_chged = 0;
                 g_drlock_sta_chged |= 0x80;
                 printf("peps door locked\n");
 			}
 		} else {// unlocked
+			g_peps_sta &= ~BIT_PEPS_LOCK;// unlocked
+
 			if (0 == (g_drlock_sta_chged&0x7F)) {
 				g_drlock_sta_chged = 1;
                 g_drlock_sta_chged |= 0x80;
@@ -200,8 +265,8 @@ u8 CAN1_Receive_Msg(u8 *buf)
 
 		if (0x01 == (RxMessage.Data[0]&0x1)) {// Opened
 			g_door_state = 1;
-			g_car_sta |= (1<<BIT_LEFT_DOOR);
-			g_car_sta |= (1<<BIT_RIGHT_DOOR);
+			g_car_sta |= BIT_LEFT_DOOR;
+			g_car_sta |= BIT_RIGHT_DOOR;
 
 			if (0 == (g_dropen_sta_chged&0x7F)) {
 				g_dropen_sta_chged = 1;
@@ -210,8 +275,8 @@ u8 CAN1_Receive_Msg(u8 *buf)
 			}
 		} else {// Closed
 			g_door_state = 0;
-			g_car_sta &= ~(1<<BIT_LEFT_DOOR);
-			g_car_sta &= ~(1<<BIT_RIGHT_DOOR);
+			g_car_sta &= ~BIT_LEFT_DOOR;
+			g_car_sta &= ~BIT_RIGHT_DOOR;
 
 			if (1 == (g_dropen_sta_chged&0x7F)) {
 				g_dropen_sta_chged = 0;
@@ -220,10 +285,108 @@ u8 CAN1_Receive_Msg(u8 *buf)
 			}
 		}
 
-		if (0x20 == (RxMessage.Data[0]&0x20)) {// Power ON
+		if (0x20 == (RxMessage.Data[0]&0x20)) {// Power
 			g_power_state = 1;
-		} else {// Power OFF
+			g_peps_sta |= BIT_PEPS_ENGINE;// ON
+		} else {
 			g_power_state = 0;
+			g_peps_sta &= ~BIT_PEPS_ENGINE;// OFF
+		}
+		
+		if (0x01 == (RxMessage.Data[1]&0x01)) {// Lamp
+			g_peps_sta |= BIT_PEPS_LAMP;// ON
+		} else {
+			g_peps_sta &= ~BIT_PEPS_LAMP;// OFF
+		}
+		
+		if (0x02 == (RxMessage.Data[1]&0x2)) {// Alarm
+			g_peps_sta |= BIT_PEPS_ALARM;// ON
+		} else {
+			g_peps_sta &= ~BIT_PEPS_ALARM;// OFF
+		}
+
+		if (g_peps_req&BIT_PEPS_LAMP) {
+			if (g_peps_sta&BIT_PEPS_LAMP) {// Lamping
+				g_peps_req &= ~BIT_PEPS_LAMP;// Clear Request
+			} else {
+				g_relamp_cnt++;
+				if (g_relamp_cnt >= 3) {// 1.5s
+					g_relamp_cnt = 0;
+					CAN1_JumpLamp_no_delay(5);
+				}
+			}
+		} else {
+			g_relamp_cnt = 0;
+		}
+
+		if (g_peps_req&BIT_PEPS_ALARM) {
+			if (g_peps_sta&BIT_PEPS_ALARM) {// Alarming
+				g_peps_req &= ~BIT_PEPS_ALARM;// Clear Request
+			} else {
+				g_realarm_cnt++;
+				if (g_realarm_cnt >= 3) {// 1.5s
+					g_realarm_cnt = 0;
+					CAN1_RingAlarm_no_delay(5);
+				}
+			}
+		} else {
+			g_realarm_cnt = 0;
+		}
+
+		if (g_peps_req&BIT_PEPS_LOCK) {
+			if (g_peps_sta&BIT_PEPS_LOCK) {// Locking
+				g_peps_req &= ~BIT_PEPS_LOCK;// Clear Request
+			} else {
+				g_relock_cnt++;
+				if (g_relock_cnt >= 4) {// 2s
+					g_relock_cnt = 0;
+					CAN1_CloseDoor_no_delay();
+				}
+			}
+		} else {
+			g_relock_cnt = 0;
+		}
+
+		if (g_peps_req&BIT_PEPS_UNLOCK) {
+			if (!(g_peps_sta&BIT_PEPS_LOCK)) {// Unlocking
+				g_peps_req &= ~BIT_PEPS_UNLOCK;// Clear Request
+			} else {
+				g_reunlock_cnt++;
+				if (g_reunlock_cnt >= 4) {// 2s
+					g_reunlock_cnt = 0;
+					CAN1_OpenDoor_no_delay();
+				}
+			}
+		} else {
+			g_reunlock_cnt = 0;
+		}
+
+		if (g_peps_req&BIT_PEPS_ENGINE) {
+			if (g_peps_sta&BIT_PEPS_ENGINE) {// Starting
+				g_peps_req &= ~BIT_PEPS_ENGINE;// Clear Request
+			} else {
+				g_restart_engine_cnt++;
+				if (g_restart_engine_cnt >= 4) {// 2s
+					g_restart_engine_cnt = 0;
+					CAN1_StartEngine_no_delay();
+				}
+			}
+		} else {
+			g_restart_engine_cnt = 0;
+		}
+
+		if (g_peps_req&BIT_PEPS_ENGINE_STOP) {
+			if (!(g_peps_sta&BIT_PEPS_ENGINE)) {// Stoping
+				g_peps_req &= ~BIT_PEPS_ENGINE_STOP;// Clear Request
+			} else {
+				g_restop_engine_cnt++;
+				if (g_restop_engine_cnt >= 4) {// 2s
+					g_restop_engine_cnt = 0;
+					CAN1_StopEngine_no_delay();
+				}
+			}
+		} else {
+			g_restop_engine_cnt = 0;
 		}
 
 	// Byte1:
@@ -271,12 +434,29 @@ u8 CAN1_Wakeup(void)
 u8 CAN1_StartEngine(void)
 {
 	u8 can1_sendbuf[8]={0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-	
-    printf("PEPS StartEngine...\n");
+
+	RTC_TimeTypeDef RTC_TimeStruct;
+	RTC_GetTime(RTC_Format_BIN,&RTC_TimeStruct);
 
 	CAN1_Wakeup();
 	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
-	
+
+	printf("%02d%02d%02d:PEPS StartEngine...\n", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds);
+
+	return 0;
+}
+
+u8 CAN1_StartEngine_no_delay(void)
+{
+	u8 can1_sendbuf[8]={0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+	RTC_TimeTypeDef RTC_TimeStruct;
+	RTC_GetTime(RTC_Format_BIN,&RTC_TimeStruct);
+
+	CAN1_Send_Msg_no_delay(can1_sendbuf,8);//发送8个字节 
+
+	printf("%02d%02d%02d:Retry PEPS StartEngine...\n", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds);
+
 	return 0;
 }
 
@@ -284,10 +464,27 @@ u8 CAN1_StopEngine(void)
 {
 	u8 can1_sendbuf[8]={0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 	
-    printf("PEPS StopEngine...\n");
+	RTC_TimeTypeDef RTC_TimeStruct;
+	RTC_GetTime(RTC_Format_BIN,&RTC_TimeStruct);
 
 	CAN1_Wakeup();
 	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
+
+	printf("%02d%02d%02d:PEPS StopEngine...\n", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds);
+	
+	return 0;
+}
+
+u8 CAN1_StopEngine_no_delay(void)
+{
+	u8 can1_sendbuf[8]={0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+	
+	RTC_TimeTypeDef RTC_TimeStruct;
+	RTC_GetTime(RTC_Format_BIN,&RTC_TimeStruct);
+
+	CAN1_Send_Msg_no_delay(can1_sendbuf,8);//发送8个字节 
+
+	printf("%02d%02d%02d:Retry PEPS StopEngine...\n", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds);
 	
 	return 0;
 }
@@ -295,11 +492,28 @@ u8 CAN1_StopEngine(void)
 u8 CAN1_OpenDoor(void)
 {
 	u8 can1_sendbuf[8]={0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-	
-    printf("PEPS OpenDoor...\n");
+
+	RTC_TimeTypeDef RTC_TimeStruct;
+	RTC_GetTime(RTC_Format_BIN,&RTC_TimeStruct);
 
 	CAN1_Wakeup();
 	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
+
+	printf("%02d%02d%02d:PEPS OpenDoor...\n", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds);
+	
+	return 0;
+}
+
+u8 CAN1_OpenDoor_no_delay(void)
+{
+	u8 can1_sendbuf[8]={0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+	RTC_TimeTypeDef RTC_TimeStruct;
+	RTC_GetTime(RTC_Format_BIN,&RTC_TimeStruct);
+
+	CAN1_Send_Msg_no_delay(can1_sendbuf,8);//发送8个字节 
+
+	printf("%02d%02d%02d:Retry PEPS OpenDoor...\n", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds);
 	
 	return 0;
 }
@@ -307,12 +521,29 @@ u8 CAN1_OpenDoor(void)
 u8 CAN1_CloseDoor(void)
 {
 	u8 can1_sendbuf[8]={0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-	
-    printf("PEPS CloseDoor...\n");
+
+	RTC_TimeTypeDef RTC_TimeStruct;
+	RTC_GetTime(RTC_Format_BIN,&RTC_TimeStruct);
 
 	CAN1_Wakeup();
 	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
-	
+
+	printf("%02d%02d%02d:PEPS CloseDoor...\n", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds);
+
+	return 0;
+}
+
+u8 CAN1_CloseDoor_no_delay(void)
+{
+	u8 can1_sendbuf[8]={0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+	RTC_TimeTypeDef RTC_TimeStruct;
+	RTC_GetTime(RTC_Format_BIN,&RTC_TimeStruct);
+
+	CAN1_Send_Msg_no_delay(can1_sendbuf,8);//发送8个字节 
+
+	printf("%02d%02d%02d:Retry PEPS CloseDoor...\n", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds);
+
 	return 0;
 }
 
@@ -320,10 +551,29 @@ u8 CAN1_JumpLamp(u8 times)
 {
 	u8 can1_sendbuf[8]={0x01, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 	
-    printf("PEPS JumpLamp...\n");
-
+	RTC_TimeTypeDef RTC_TimeStruct;
+	RTC_GetTime(RTC_Format_BIN,&RTC_TimeStruct);
+	
 	CAN1_Wakeup();
 	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
+
+	g_peps_req |= BIT_PEPS_LAMP;
+
+	printf("%02d%02d%02d:PEPS JumpLamp...\n", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds);
+	
+	return 0;
+}
+
+u8 CAN1_JumpLamp_no_delay(u8 times)
+{
+	u8 can1_sendbuf[8]={0x01, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+	
+	RTC_TimeTypeDef RTC_TimeStruct;
+	RTC_GetTime(RTC_Format_BIN,&RTC_TimeStruct);
+	
+	CAN1_Send_Msg_no_delay(can1_sendbuf,8);//发送8个字节 
+
+	printf("%02d%02d%02d:Retry PEPS JumpLamp...\n", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds);
 	
 	return 0;
 }
@@ -332,10 +582,29 @@ u8 CAN1_RingAlarm(u8 times)
 {
 	u8 can1_sendbuf[8]={0x02, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00};
 	
-    printf("PEPS RingAlarm...\n");
+	RTC_TimeTypeDef RTC_TimeStruct;
+	RTC_GetTime(RTC_Format_BIN,&RTC_TimeStruct);
 
 	CAN1_Wakeup();
 	CAN1_Send_Msg(can1_sendbuf,8);//发送8个字节 
+	
+	g_peps_req |= BIT_PEPS_ALARM;
+
+	printf("%02d%02d%02d:PEPS RingAlarm...\n", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds);
+	
+	return 0;
+}
+
+u8 CAN1_RingAlarm_no_delay(u8 times)
+{
+	u8 can1_sendbuf[8]={0x02, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00};
+	
+	RTC_TimeTypeDef RTC_TimeStruct;
+	RTC_GetTime(RTC_Format_BIN,&RTC_TimeStruct);
+
+	CAN1_Send_Msg_no_delay(can1_sendbuf,8);//发送8个字节 
+
+	printf("%02d%02d%02d:Retry PEPS RingAlarm...\n", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds);
 	
 	return 0;
 }

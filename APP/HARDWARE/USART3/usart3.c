@@ -86,7 +86,12 @@ void debug_process(void)
 		g_bms_charge_sta_chged = 0;
 		g_bms_charge_sta_chged |= 0x80; 
 	} else if (0 == strncmp((const char*)USART_RX_BUF, SET_PEPS, strlen(SET_PEPS))) {
-        test_mode = atoi((const char*)(USART_RX_BUF+strlen(SET_PEPS)));
+			RTC_TimeTypeDef RTC_TimeStruct;
+			RTC_GetTime(RTC_Format_BIN,&RTC_TimeStruct);
+
+      test_mode = atoi((const char*)(USART_RX_BUF+strlen(SET_PEPS)));
+			printf("%02d%02d%02d:UART3 RECVED %s, %d\n", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds,USART_RX_BUF,test_mode);
+
         if (0 == test_mode) {
             CAN1_JumpLamp(5);
         } else if (1 == test_mode) {
