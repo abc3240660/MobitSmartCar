@@ -251,7 +251,7 @@ u8 CAN1_Receive_Msg(u8 *buf)
             memset(log_msg, 0, 64);
             sprintf(log_msg, "RECV: %.8X - %.2X%.2X%.2X%.2X%.2X%.2X%.2X%.2X", RxMessage.ExtId, RxMessage.Data[0], RxMessage.Data[1], RxMessage.Data[2], RxMessage.Data[3], RxMessage.Data[4], RxMessage.Data[5], RxMessage.Data[6], RxMessage.Data[7]);
 
-            write_logs("CAN1", (char*)log_msg, strlen((char*)log_msg), 2);
+            //write_logs("CAN1", (char*)log_msg, strlen((char*)log_msg), 2);
             test_cnt_mc3264 = 0;
         }
 	}
