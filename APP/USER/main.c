@@ -203,7 +203,7 @@ void do_vs_test(void)
 	}
 	
 	delay_ms(1000);
-	music_play("0:/MUSIC/sax.mp3");
+	music_play("0:/MUSIC/OPENLOCK.mp3");
 	
 	while(1) {
 		delay_ms(1000);
@@ -261,6 +261,10 @@ void system_init(void)
 
 	delay_ms(1000);
 	SIM7000E_RST = 0;
+//	
+//	do_vs_test();
+//	
+//	printf("test mp3 ok\n");
 }
 
 void SoftReset(void)

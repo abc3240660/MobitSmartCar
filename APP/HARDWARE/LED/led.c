@@ -43,4 +43,8 @@ void LED_Init(void)
   GPIO_Init(GPIOD, &GPIO_InitStructure);
 
   GPIO_ResetBits(GPIOD, GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7);
+	
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
+	GPIO_Init(GPIOB, &GPIO_InitStructure); 
+  GPIO_SetBits(GPIOB, GPIO_Pin_1);
 }
