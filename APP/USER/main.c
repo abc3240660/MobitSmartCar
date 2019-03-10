@@ -261,10 +261,6 @@ void system_init(void)
 
 	delay_ms(1000);
 	SIM7000E_RST = 0;
-	
-	do_vs_test();
-	
-	printf("test mp3 ok\n");
 }
 
 void SoftReset(void)
