@@ -299,6 +299,7 @@ u8 sim7500e_file_dw_check(void)
         delay_ms(50);
     }
 
+		DW_RX_STA = 0;
     g_dw_recved_sum += g_data_size;
 
     return 0;
@@ -1510,7 +1511,7 @@ u8 sim7500e_setup_http(void)
 					sprintf(send_buf, "AT+HTTPPARA=\"URL\",\"%s\"", g_iap_update_url);
 			}
 
-	#if 1// DEBUG
+	#if 0// DEBUG
 			if (sim7500e_send_cmd("AT+HTTPPARA=\"URL\",\"http://gdlt.sc.chinaz.com/Files/DownLoad/sound1/201701/8224.wav\"","OK",1000)) {
 					if (sim7500e_send_cmd("AT+HTTPPARA=\"URL\",\"http://gdlt.sc.chinaz.com/Files/DownLoad/sound1/201701/8224.wav\"","OK",1000)) {
 						ret = 1;
@@ -1568,7 +1569,7 @@ u8 sim7500e_setup_http(void)
     return 0;
 }
 
-void sim7500e_http_mp3()
+u8 sim7500e_http_mp3()
 {
 		u8 err = 0;
     u8 try_cnt = 0;
@@ -1583,12 +1584,12 @@ void sim7500e_http_mp3()
 
             // try two times
             if (sim7500e_setup_http()) {
-                if (sim7500e_setup_http()) return;
+                if (sim7500e_setup_http()) return 1;
             }
 
             if (strlen((const char*)g_mp3_update_name) > 40) {
                 printf("file name is too long\n");
-                return;
+                return 1;
             }
 
             sprintf((char*)mp3_file, "0:/MUSIC/%s.mp3", g_mp3_update_name);
@@ -1596,7 +1597,7 @@ void sim7500e_http_mp3()
             if (0 == res) {
                 f_close(&f_txt);
             } else {
-                return;
+                return 1;
             }
         }
 
@@ -1617,14 +1618,14 @@ void sim7500e_http_mp3()
 						
             while (0 == DW_RX_STA) {
                 if (try_cnt >= 100) {// 5s
-                    return;
+                    return 1;
                 }
                 delay_ms(50);
                 try_cnt++;
             }
 
             if (sim7500e_file_dw_check()) {
-                return;
+                return 1;
             }
 
             printf("g_dw_recved_sum = %d\n", g_dw_recved_sum);
@@ -1641,6 +1642,8 @@ void sim7500e_http_mp3()
             }
         }
     }
+		
+		return 0;
 }
 
 void sim7500e_http_iap()
@@ -1714,43 +1717,10 @@ void sim7500e_idle_actions(void)
 {
     // during download mode, skip other operations
     // till download success or failed
-    if (g_iap_update != 0) {
-        sim7500e_http_iap();
-
-        // try twice NG, skip this request
-        if (g_iap_update != 0) {
-            g_iap_update = 0;
-
-            memset(g_iap_update_md5, 0, LEN_DW_MD5);
-            memset(g_iap_update_url, 0, LEN_DW_URL);
-
-            g_dw_size_total = 0;
-            g_dw_recved_sum = 0;
-        }
-
-        return;
-    }
-
-    // during download mode, skip other operations
-    // till download success or failed
-    if (g_mp3_update != 0) {
-        sim7500e_http_mp3();
-
-        // try twice NG, skip this request
-        if (g_mp3_update != 0) {
-            g_mp3_update = 0;
-
-            memset(g_mp3_update_md5, 0, LEN_DW_MD5);
-            memset(g_mp3_update_url, 0, LEN_DW_URL);
-            memset(g_mp3_update_name, 0, LEN_FILE_NAME);
-
-            g_dw_size_total = 0;
-            g_dw_recved_sum = 0;
-        }
-
-        return;
-    }
-
+    if ((g_mp3_update!=0) || (g_iap_update!=0)) {
+			return;
+		}
+								
     if (g_calypso_active) {
         sim7500e_do_calypso_report();
         g_calypso_active = 0;
@@ -1799,8 +1769,10 @@ void sim7500e_idle_actions(void)
     }
 
     if (1 == g_gps_active) {
-        g_gps_active = 0;
-        sim7500e_do_gps_location_report();
+				if (g_gps_trace_gap != 0) {
+					g_gps_active = 0;
+					sim7500e_do_gps_location_report();
+				}
     }
 
     sim7500e_invalid_move_check();
@@ -1836,13 +1808,46 @@ void sim7500e_mobit_process(u8 index)
 
 void sim7500e_mobit_msg_ack(void)
 {
-    // Two Path to Control SIM700E
-    // 1: sim7500e_communication_loop
-    // 2: sim7500e_mobit_process
-    // Must Be Careful!!!
-    // If ACK Confused, Please Move AT-Send from sim7500e_mobit_process into here
-    // Warning: send_buf will be used in two place!!!
-				
+    // during download mode, skip other operations
+    // till download success or failed
+    if (g_mp3_update != 0) {
+        if (sim7500e_http_mp3()) {
+					if (sim7500e_http_mp3()) {
+        // try twice NG, skip this request
+            g_mp3_update = 0;
+						printf("failed to do sim7500e_http_mp3\n");
+
+            memset(g_mp3_update_md5, 0, LEN_DW_MD5);
+            memset(g_mp3_update_url, 0, LEN_DW_URL);
+            memset(g_mp3_update_name, 0, LEN_FILE_NAME);
+
+            g_dw_size_total = 0;
+            g_dw_recved_sum = 0;
+					}
+				}
+
+        return;
+    }
+
+    // during download mode, skip other operations
+    // till download success or failed
+    if (g_iap_update != 0) {
+        sim7500e_http_iap();
+
+        // try twice NG, skip this request
+        if (g_iap_update != 0) {
+            g_iap_update = 0;
+
+            memset(g_iap_update_md5, 0, LEN_DW_MD5);
+            memset(g_iap_update_url, 0, LEN_DW_URL);
+
+            g_dw_size_total = 0;
+            g_dw_recved_sum = 0;
+        }
+
+        return;
+    }
+
     // CMD_QUERY_PARAMS,
     if (g_need_ack & (1<<QUERY_PARAMS)) {
 			g_need_ack &= ~(1<<QUERY_PARAMS);
@@ -1944,6 +1949,7 @@ void sim7500e_communication_loop(u8 mode,u8* ipaddr,u8* port)
                 // during download mode, skip other operations
                 // till download success or failed
                 if ((g_mp3_update!=0) || (g_iap_update!=0)) {
+										g_hbeat_active = 0;
                     continue;
                 }
 

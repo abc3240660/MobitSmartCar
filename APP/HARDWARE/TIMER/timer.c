@@ -429,71 +429,71 @@ void TIM7_IRQHandler(void)
 		if (USART1_RX_STA > 2) {
 			USART1_RX_STA |= 1<<15;
 			USART1_RX_BUF[USART1_RX_STA&0X7FFF] = 0;
-			
-			printf("%02d%02d%02d:+++SIM7K TM RECVED %dB:", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds,(USART1_RX_STA&0X7FFF));
-			printf("%s", USART1_RX_BUF);
-			printf("---\n");
 
 			if ((str = strstr((const char*)USART1_RX_BUF, (const char*)"+HTTPREAD"))) {
+				printf("%02d%02d%02d:+++SIM7K TM RECVED %dB:", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds,(USART1_RX_STA&0X7FFF));
+					
+				for (i=0; i<17; i++) {
+					if (0 == USART1_RX_BUF[i]) {
+						break;
+					}
+					
+					if (1 == is_dw_dat) {
+						if ((0x0D==USART1_RX_BUF[i]) && (USART1_RX_BUF[i+2]!='+')) {
+							break;
+						}
+					}
+					
+					printf("%c", USART1_RX_BUF[i]);
+				}
+				printf("---\n");
+
 				is_dw_dat = 1;
 				DW_RX_STA = USART1_RX_STA;
 				memcpy(DW_RX_BUF, USART1_RX_BUF, (USART1_RX_STA&0X7FFF)+1);
-			} else if ((str = strstr((const char*)USART1_RX_BUF, (const char*)"^MOBIT"))) {
-				u8 k = 0;
-
-				for (i=0; i<(USART1_RX_STA&0X7FFF); i++) {
-					TEMP_RX_BUF[k] = USART1_RX_BUF[i];
-					k++;
-					
-					if (('\n'==TEMP_RX_BUF[k-1]) && (k > 2)) {
-						TEMP_RX_BUF[k] = '\0';
-
-						if ((str = strstr((const char*)TEMP_RX_BUF, (const char*)"^MOBIT"))) {
-							MOBIT_RX_STA[U1_MOBIT_RX_ID] = k;
-							MOBIT_RX_STA[U1_MOBIT_RX_ID] |= (1<<15);
-							memcpy(MOBIT_RX_BUF+U1_RX_LEN_ONE*U1_MOBIT_RX_ID, TEMP_RX_BUF, k+1);
-							printf("TM RECVED X2(%d) = %s\n", U1_MOBIT_RX_ID, MOBIT_RX_BUF+U1_RX_LEN_ONE*U1_MOBIT_RX_ID);
-							// next index for use
-							U1_MOBIT_RX_ID = (U1_MOBIT_RX_ID+1)%U1_RX_BUF_CNT;
-						} else {
-							AT_RX_STA[U1_AT_RX_ID] = k;
-							AT_RX_STA[U1_AT_RX_ID] |= (1<<15);
-							memcpy(AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID, TEMP_RX_BUF, k+1);
-							printf("TM RECVED X1(%d) = %s\n", U1_AT_RX_ID, AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID);
-							// next index for use
-							U1_AT_RX_ID = (U1_AT_RX_ID+1)%U1_RX_BUF_CNT;
-						}
-						
-						k = 0;
-					}
-				}
 			} else {
-				AT_RX_STA[U1_AT_RX_ID] = USART1_RX_STA;
-				memcpy(AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID, USART1_RX_BUF, (USART1_RX_STA&0X7FFF)+1);
+				printf("%02d%02d%02d:+++SIM7K TM RECVED %dB:", RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds,(USART1_RX_STA&0X7FFF));
+				printf("%s", USART1_RX_BUF);
+				printf("---\n");
 
-				printf("TM RECVED AT_ACK(%d) = %s\n", U1_AT_RX_ID, AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID);
-				// next index for use
-				U1_AT_RX_ID = (U1_AT_RX_ID+1)%U1_RX_BUF_CNT;
-			}
+				if ((str = strstr((const char*)USART1_RX_BUF, (const char*)"^MOBIT"))) {
+					u8 k = 0;
 
-#if 0
-			printf("+++SIM7K RECVED %dB:", USART1_RX_STA&0X7FFF);
-				
-			for (i=0; i<64; i++) {
-				if (0 == USART1_RX_BUF[i]) {
-					break;
-				}
-				
-				if (1 == is_dw_dat) {
-					if ((0x0D==USART1_RX_BUF[i]) && (USART1_RX_BUF[i+2]!='+')) {
-						break;
+					for (i=0; i<(USART1_RX_STA&0X7FFF); i++) {
+						TEMP_RX_BUF[k] = USART1_RX_BUF[i];
+						k++;
+						
+						if (('\n'==TEMP_RX_BUF[k-1]) && (k > 2)) {
+							TEMP_RX_BUF[k] = '\0';
+
+							if ((str = strstr((const char*)TEMP_RX_BUF, (const char*)"^MOBIT"))) {
+								MOBIT_RX_STA[U1_MOBIT_RX_ID] = k;
+								MOBIT_RX_STA[U1_MOBIT_RX_ID] |= (1<<15);
+								memcpy(MOBIT_RX_BUF+U1_RX_LEN_ONE*U1_MOBIT_RX_ID, TEMP_RX_BUF, k+1);
+								printf("TM RECVED X2(%d) = %s\n", U1_MOBIT_RX_ID, MOBIT_RX_BUF+U1_RX_LEN_ONE*U1_MOBIT_RX_ID);
+								// next index for use
+								U1_MOBIT_RX_ID = (U1_MOBIT_RX_ID+1)%U1_RX_BUF_CNT;
+							} else {
+								AT_RX_STA[U1_AT_RX_ID] = k;
+								AT_RX_STA[U1_AT_RX_ID] |= (1<<15);
+								memcpy(AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID, TEMP_RX_BUF, k+1);
+								printf("TM RECVED X1(%d) = %s\n", U1_AT_RX_ID, AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID);
+								// next index for use
+								U1_AT_RX_ID = (U1_AT_RX_ID+1)%U1_RX_BUF_CNT;
+							}
+							
+							k = 0;
+						}
 					}
+				} else {
+					AT_RX_STA[U1_AT_RX_ID] = USART1_RX_STA;
+					memcpy(AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID, USART1_RX_BUF, (USART1_RX_STA&0X7FFF)+1);
+
+					printf("TM RECVED AT_ACK(%d) = %s\n", U1_AT_RX_ID, AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID);
+					// next index for use
+					U1_AT_RX_ID = (U1_AT_RX_ID+1)%U1_RX_BUF_CNT;
 				}
-				
-				printf("%c", USART1_RX_BUF[i]);
 			}
-			printf("---\n");
-#endif
 		}
 
 		USART1_RX_STA = 0;
