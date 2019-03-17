@@ -522,7 +522,7 @@ void usart_task(void *pdata)
             continue;
           }
 
-					sprintf((char*)mp3_file, "0:/MUSIC/%s.mp3", g_mp3_update_name);
+					sprintf((char*)mp3_file, "0:/MUSIC/%s_tmp.mp3", g_mp3_update_name);
 					res = f_open(&f_txt,(const TCHAR*)mp3_file,FA_READ|FA_WRITE);
 				} else if (g_iap_update != 0) {
 						res = f_open(&f_txt,(const TCHAR*)"0:/IAP/APP.BIN",FA_READ|FA_WRITE);

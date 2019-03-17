@@ -310,7 +310,7 @@ u8 CAN1_Receive_Msg(u8 *buf)
 				g_peps_req &= ~BIT_PEPS_LAMP;// Clear Request
 			} else {
 				g_relamp_cnt++;
-				if (g_relamp_cnt >= 2) {// 1s
+				if (g_relamp_cnt >= 1) {// 1s
 					g_relamp_cnt = 0;
 					CAN1_JumpLamp_no_delay(5);
 				}
@@ -324,7 +324,7 @@ u8 CAN1_Receive_Msg(u8 *buf)
 				g_peps_req &= ~BIT_PEPS_ALARM;// Clear Request
 			} else {
 				g_realarm_cnt++;
-				if (g_realarm_cnt >= 2) {// 1s
+				if (g_realarm_cnt >= 1) {// 1s
 					g_realarm_cnt = 0;
 					CAN1_RingAlarm_no_delay(5);
 				}
@@ -338,7 +338,7 @@ u8 CAN1_Receive_Msg(u8 *buf)
 				g_peps_req &= ~BIT_PEPS_LOCK;// Clear Request
 			} else {
 				g_relock_cnt++;
-				if (g_relock_cnt >= 2) {// 1s
+				if (g_relock_cnt >= 1) {// 1s
 					g_relock_cnt = 0;
 					CAN1_CloseDoor_no_delay();
 				}
@@ -352,7 +352,7 @@ u8 CAN1_Receive_Msg(u8 *buf)
 				g_peps_req &= ~BIT_PEPS_UNLOCK;// Clear Request
 			} else {
 				g_reunlock_cnt++;
-				if (g_reunlock_cnt >= 2) {// 1s
+				if (g_reunlock_cnt >= 1) {// 1s
 					g_reunlock_cnt = 0;
 					CAN1_OpenDoor_no_delay();
 				}
@@ -366,7 +366,7 @@ u8 CAN1_Receive_Msg(u8 *buf)
 				g_peps_req &= ~BIT_PEPS_ENGINE;// Clear Request
 			} else {
 				g_restart_engine_cnt++;
-				if (g_restart_engine_cnt >= 2) {// 1s
+				if (g_restart_engine_cnt >= 1) {// 1s
 					g_restart_engine_cnt = 0;
 					CAN1_StartEngine_no_delay();
 				}
@@ -380,7 +380,7 @@ u8 CAN1_Receive_Msg(u8 *buf)
 				g_peps_req &= ~BIT_PEPS_ENGINE_STOP;// Clear Request
 			} else {
 				g_restop_engine_cnt++;
-				if (g_restop_engine_cnt >= 2) {// 1s
+				if (g_restop_engine_cnt >= 1) {// 1s
 					g_restop_engine_cnt = 0;
 					CAN1_StopEngine_no_delay();
 				}

@@ -44,9 +44,8 @@ u8 g_iap_update_md5[LEN_DW_MD5+1]   = "";
 u8 g_iap_update_url[LEN_DW_URL+1] = "";
 
 u8 g_mp3_update = 0;
-u8 g_mp3_update_md5[LEN_DW_MD5+1]   = "";
 u8 g_mp3_update_url[LEN_DW_URL+1]   = "";
-u8 g_mp3_update_name[LEN_FILE_NAME+1] = "test";
+u8 g_mp3_update_name[LEN_FILE_NAME+1] = "";
 
 u32 g_dw_recved_sum = 0;
 u32 g_dw_size_total = 0;
@@ -848,6 +847,11 @@ void sim7500e_do_query_mp3_ack()
 	memset(g_mp3_list, 0, 512);
 	memset(send_buf_main, 0, LEN_MAX_SEND);
 	scan_files("0:/MUSIC");
+
+	if ('|' == g_mp3_list[strlen((const char*)g_mp3_list)-1]) {
+		g_mp3_list[strlen((const char*)g_mp3_list)-1] = 0;
+	}
+
 	sprintf(send_buf_main, "%s,%s,%s,%s,%s,%s$", PROTOCOL_HEAD, DEV_TAG, g_imei_str, CMD_DEV_ACK, CMD_QUERY_MP3, g_mp3_list);
 
 	sim7500e_tcp_send(send_buf_main);
@@ -1199,19 +1203,9 @@ void sim7500e_parse_msg(char* msg)
 					printf("g_mp3_update_name = %s\n", g_mp3_update_name);
 				} else if (5 == index) {
 					memset(g_mp3_update_url, 0, LEN_DW_URL);
-					if (strlen(split_str) < 10) {// if url NULL -> delete file
-						u8 mp3_file[LEN_FILE_NAME+1] = "";
-						sprintf((char*)mp3_file, "0:/MUSIC/%s.mp3", g_mp3_update_name);
-						f_unlink((const char*)mp3_file);
-					} else {
-						g_mp3_update = 1;
-						strncpy((char*)g_mp3_update_url, split_str, LEN_DW_URL);
-					}
+					g_mp3_update = 1;
+					strncpy((char*)g_mp3_update_url, split_str, LEN_DW_URL);
 					printf("g_mp3_update_url = %s\n", g_mp3_update_url);
-				} else if (6 == index) {
-					memset(g_mp3_update_md5, 0, LEN_DW_MD5);
-					strncpy((char*)g_mp3_update_md5, split_str, LEN_DW_MD5);
-					printf("g_mp3_update_md5 = %s\n", g_mp3_update_md5);
 				}
 			} else if (START_TRACE == cmd_type) {
                 g_time_start_gps = os_jiffies;
@@ -1238,6 +1232,13 @@ void sim7500e_parse_msg(char* msg)
 			}
 		}
 		split_str = strtok(NULL, delims);
+		if ((NULL==split_str) && (MP3_UPDATE==cmd_type) && (4==index)) {
+			//if url NULL -> delete file
+			u8 mp3_file[LEN_FILE_NAME+1] = "";
+			sprintf((char*)mp3_file, "0:/MUSIC/%s.mp3", g_mp3_update_name);
+			f_unlink((const char*)mp3_file);
+			printf("%s deleted\n", mp3_file);
+		}
 		index++;
 	}
 }
@@ -1538,11 +1539,13 @@ u8 sim7500e_setup_http(void)
 					}
 
 					if (is_jiffies_timeout(time_start, 60000)) {// 60s
+							printf("http test00\n");
 							ret = 1;
 							break;
 					}
 
 					if (240 == i) {
+						printf("http test01\n");
 						ret = 1;
 						break;
 					}
@@ -1558,6 +1561,7 @@ u8 sim7500e_setup_http(void)
 		OSSemPost(sem_atsend);
 		
 		if (1 == ret) {
+			printf("http test02\n");
 			return 1;
 		}
 
@@ -1592,7 +1596,7 @@ u8 sim7500e_http_mp3()
                 return 1;
             }
 
-            sprintf((char*)mp3_file, "0:/MUSIC/%s.mp3", g_mp3_update_name);
+            sprintf((char*)mp3_file, "0:/MUSIC/%s_tmp.mp3", g_mp3_update_name);
             res = f_open(&f_txt,(const TCHAR*)mp3_file,FA_READ|FA_WRITE|FA_CREATE_ALWAYS);
             if (0 == res) {
                 f_close(&f_txt);
@@ -1630,9 +1634,15 @@ u8 sim7500e_http_mp3()
 
             printf("g_dw_recved_sum = %d\n", g_dw_recved_sum);
             if (g_dw_recved_sum == g_dw_size_total) {
+								u8 mp3_file_old[LEN_FILE_NAME+1] = "";
+								u8 mp3_file_new[LEN_FILE_NAME+1] = "";
+
                 g_mp3_update = 0;
 
-                memset(g_mp3_update_md5, 0, LEN_DW_MD5);
+								sprintf((char*)mp3_file_old, "0:/MUSIC/%s_tmp.mp3", g_mp3_update_name);
+								sprintf((char*)mp3_file_new, "0:/MUSIC/%s.mp3", g_mp3_update_name);
+							  f_rename(mp3_file_old, mp3_file_new);
+								printf("rename from X_tmp.mp3 to X.mp3\n");
                 memset(g_mp3_update_url, 0, LEN_DW_URL);
                 memset(g_mp3_update_name, 0, LEN_FILE_NAME);
 
@@ -1817,7 +1827,6 @@ void sim7500e_mobit_msg_ack(void)
             g_mp3_update = 0;
 						printf("failed to do sim7500e_http_mp3\n");
 
-            memset(g_mp3_update_md5, 0, LEN_DW_MD5);
             memset(g_mp3_update_url, 0, LEN_DW_URL);
             memset(g_mp3_update_name, 0, LEN_FILE_NAME);
 

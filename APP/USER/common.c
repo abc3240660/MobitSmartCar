@@ -150,13 +150,12 @@ FRESULT scan_files(char *path)
 				u8 len = strlen((const char*)g_mp3_list);
 				for (j=len; j<128; j++) {
 					if ('.' == fno.fname[j-len]) {
-						g_mp3_list[j] = ':';
+						g_mp3_list[j] = '|';
 						break;
 					} else {
 						g_mp3_list[j] = fno.fname[j-len];
 					}
 				}
-				strcpy((char*)g_mp3_list+j+1, "01234567890123456789012345678901|");
 				printf("this is file %s/%s\n", path, fno.fname);
 			}
 		}
