@@ -285,7 +285,8 @@ u8 CAN1_Receive_Msg(u8 *buf)
 			}
 		}
 
-		if (0x20 == (RxMessage.Data[0]&0x20)) {// Power
+		// 00-OFF, 01-ACC, 10-ON
+		if (0x80 == (RxMessage.Data[0]&0xC0)) {// Power
 			g_power_state = 1;
 			g_peps_sta |= BIT_PEPS_ENGINE;// ON
 		} else {
