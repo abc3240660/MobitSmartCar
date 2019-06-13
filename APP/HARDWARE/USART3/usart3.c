@@ -8,7 +8,12 @@
 #include "malloc.h"
 #include "can1.h"
 #include "delay.h"
+#include "common.h"
+#include <stdlib.h>
 
+#define SET_APN "SET APN="
+#define SET_IP "SET IP="
+#define SET_PORT "SET PORT="
 #define SET_GPS_GAP "SET-GPS-GAP="
 #define SET_HBEAT_GAP "SET-HBEAT-GAP="
 #define TRIG_DOOR_OPENED "TRIG-DOOR-OPENED"
@@ -36,6 +41,7 @@ u8 USART_RX_BUF[USART_REC_LEN];     //接收缓冲,最大USART_REC_LEN个字节.
 //bit13~0，	接收到的有效字节数目
 u16 USART_RX_STA=0;       //接收状态标记	
 
+void SoftReset(void);
 //////////////////////////////////////////////////////////////////
 //加入以下代码,支持printf函数,而不需要选择use MicroLIB	  
 #if 1
@@ -61,6 +67,9 @@ int fputc(int ch, FILE *f)
 }
 #endif
 
+extern u8 g_svr_ip[32];
+extern u8 g_svr_apn[32];
+extern u8 g_svr_port[8];
 void debug_process(void)
 {
     u8 test_mode = 0;
@@ -71,6 +80,30 @@ void debug_process(void)
 	} else if (0 == strncmp((const char*)USART_RX_BUF, SET_HBEAT_GAP, strlen(SET_HBEAT_GAP))) {
 		g_hbeat_gap = atoi((const char*)(USART_RX_BUF+strlen(SET_HBEAT_GAP)));
 		printf("g_hbeat_gap = %d\n", g_hbeat_gap);
+	} else if (0 == strncmp((const char*)USART_RX_BUF, SET_IP, strlen(SET_IP))) {
+		memset(g_svr_ip, 0, 32);
+		strncpy((char*)g_svr_ip, (const char*)(data+strlen(SET_IP)), 32);
+		printf("g_svr_ip = %d\n", g_svr_ip);
+	} else if (0 == strncmp((const char*)USART_RX_BUF, SET_PORT, strlen(SET_PORT))) {
+		memset(g_svr_port, 0, 32);
+		strncpy((char*)g_svr_port, (const char*)(data+strlen(SET_PORT)), 32);
+		printf("g_svr_port = %d\n", g_svr_port);
+	} else if (0 == strncmp((const char*)USART_RX_BUF, SET_APN, strlen(SET_APN))) {
+		SYS_ENV sys_env;
+		
+		memset(g_svr_apn, 0, 32);
+		strncpy((char*)g_svr_apn, (const char*)(data+strlen(SET_APN)), 32);
+		printf("g_svr_apn = %d\n", g_svr_apn);
+
+		memset(&sys_env, 0, sizeof(sys_env));
+		W25QXX_Read((u8*)&sys_env, ENV_SECTOR_INDEX_ECAR*W25Q_SECTOR_SIZE, sizeof(SYS_ENV));
+
+		strncpy((char*)sys_env.svr_ip, (const char*)g_svr_ip, 32);
+		strncpy((char*)sys_env.svr_port, (const char*)g_svr_port, 8);
+		strncpy((char*)sys_env.svr_apn, (const char*)g_svr_apn, 32);
+		W25QXX_Write((u8*)&sys_env, ENV_SECTOR_INDEX_ECAR*W25Q_SECTOR_SIZE, sizeof(SYS_ENV));
+		
+		SoftReset();
 	} else if (0 == strncmp((const char*)USART_RX_BUF, TRIG_DOOR_OPENED, strlen(TRIG_DOOR_OPENED))) {
 		g_drlock_sta_chged = 1;
 		g_drlock_sta_chged |= 0x80; 
