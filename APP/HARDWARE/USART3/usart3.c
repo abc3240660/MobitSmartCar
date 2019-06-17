@@ -11,9 +11,9 @@
 #include "common.h"
 #include <stdlib.h>
 
-#define SET_APN "SET APN="
-#define SET_IP "SET IP="
-#define SET_PORT "SET PORT="
+#define SET_APN "SET-APN="
+#define SET_IP "SET-IP="
+#define SET_PORT "SET-PORT="
 #define SET_GPS_GAP "SET-GPS-GAP="
 #define SET_HBEAT_GAP "SET-HBEAT-GAP="
 #define TRIG_DOOR_OPENED "TRIG-DOOR-OPENED"
@@ -83,17 +83,17 @@ void debug_process(void)
 	} else if (0 == strncmp((const char*)USART_RX_BUF, SET_IP, strlen(SET_IP))) {
 		memset(g_svr_ip, 0, 32);
 		strncpy((char*)g_svr_ip, (const char*)(USART_RX_BUF+strlen(SET_IP)), 32);
-		printf("g_svr_ip = %d\n", g_svr_ip);
+		printf("g_svr_ip = %s\n", g_svr_ip);
 	} else if (0 == strncmp((const char*)USART_RX_BUF, SET_PORT, strlen(SET_PORT))) {
 		memset(g_svr_port, 0, 32);
 		strncpy((char*)g_svr_port, (const char*)(USART_RX_BUF+strlen(SET_PORT)), 32);
-		printf("g_svr_port = %d\n", g_svr_port);
+		printf("g_svr_port = %s\n", g_svr_port);
 	} else if (0 == strncmp((const char*)USART_RX_BUF, SET_APN, strlen(SET_APN))) {
 		SYS_ENV sys_env;
 		
 		memset(g_svr_apn, 0, 32);
 		strncpy((char*)g_svr_apn, (const char*)(USART_RX_BUF+strlen(SET_APN)), 32);
-		printf("g_svr_apn = %d\n", g_svr_apn);
+		printf("g_svr_apn = %s\n", g_svr_apn);
 
 		memset(&sys_env, 0, sizeof(sys_env));
 		W25QXX_Read((u8*)&sys_env, ENV_SECTOR_INDEX_ECAR*W25Q_SECTOR_SIZE, sizeof(SYS_ENV));
@@ -175,6 +175,7 @@ void USART3_IRQHandler(void)                	//串口1中断服务程序
 	{
 		Res =USART_ReceiveData(USART3);//(USART3->DR);	//读取接收到的数据
 		
+		// printf("RECVed:%c\r\n", Res);
 		if((USART_RX_STA&0x8000)==0)//接收未完成
 		{
 			if(USART_RX_STA&0x4000)//接收到了0x0d
@@ -193,7 +194,7 @@ void USART3_IRQHandler(void)                	//串口1中断服务程序
 				{
 					USART_RX_BUF[USART_RX_STA&0X3FFF]=Res ;
 					USART_RX_STA++;
-					if(USART_RX_STA>(USART_REC_LEN-1))USART_RX_STA=0;//接收数据错误,重新开始接收	  
+					if((USART_RX_STA&0X3FFF)>(USART_REC_LEN-1))USART_RX_STA=0;//接收数据错误,重新开始接收	  
 				}		 
 			}
 		}   		 

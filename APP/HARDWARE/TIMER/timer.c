@@ -156,7 +156,7 @@ void TIM3_IRQHandler(void)
 	if(TIM_GetITStatus(TIM3,TIM_IT_Update)==SET)
 	{
 		u8 i = 0;
-
+#if 0
 		if (UART6_RX_STA != 0) {
 			UART6_RX_STA |= 1<<15;
 			UART6_RX_BUF[UART6_RX_STA&0X7FFF] = 0;
@@ -172,6 +172,7 @@ void TIM3_IRQHandler(void)
 				printf("HC08 AT ACK: %s\n", UART6_RX_BUF);
 			}
 		}
+#endif
 
 		TIM_ClearITPendingBit(TIM3,TIM_IT_Update);
 		TIM_Cmd(TIM3,DISABLE);

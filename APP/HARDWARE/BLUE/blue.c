@@ -266,15 +266,19 @@ void hc08_debug_process(u8 *data, u16 num)
 	if (0 == strncmp((const char*)data, HC08_SET_IP, strlen(HC08_SET_IP))) {
 		memset(g_svr_ip, 0, 32);
 		strncpy((char*)g_svr_ip, (const char*)(data+strlen(HC08_SET_IP)), 32);
+		printf("g_svr_ip = %s\n", g_svr_ip);
 	} else if (0 == strncmp((const char*)data, HC08_SET_PORT, strlen(HC08_SET_PORT))) {
 		memset(g_svr_port, 0, 8);
 		strncpy((char*)g_svr_port, (const char*)(data+strlen(HC08_SET_PORT)), 8);
+		printf("g_svr_port = %s\n", g_svr_port);
 	} else if (0 == strncmp((const char*)data, HC08_SET_APN, strlen(HC08_SET_APN))) {
 		SYS_ENV sys_env;
 		
 		memset(g_svr_apn, 0, 32);
 		strncpy((char*)g_svr_apn, (const char*)(data+strlen(HC08_SET_APN)), 32);
 
+		printf("g_svr_apn = %s\n", g_svr_apn);
+		
 		memset(&sys_env, 0, sizeof(sys_env));
 		W25QXX_Read((u8*)&sys_env, ENV_SECTOR_INDEX_ECAR*W25Q_SECTOR_SIZE, sizeof(SYS_ENV));
 

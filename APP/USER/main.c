@@ -255,7 +255,9 @@ void system_init(void)
 
 	do_sd_init();
 
+	printf("before spiflash\n");
 	spiflash_init();
+	printf("after spiflash\n");
 
 	create_directories();
 
@@ -318,7 +320,7 @@ void MPU6050_Risk_Check()
 		if((roll*100>4500)||(roll*100<-4500)||(pitch*100>4500)||(pitch*100<-4500)||(yaw*10>450)||(yaw*10<-450))
 		{
 			g_mpu_sta = 1;
-			printf("FCL \r\n");
+			// printf("FCL \r\n");
 		} else {
 			g_mpu_sta = 0;
 			// printf("MFC \r\n");

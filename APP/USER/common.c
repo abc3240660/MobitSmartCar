@@ -78,6 +78,13 @@ void sys_env_dump(void)
 	g_total_meters = sys_env.total_meters;
 	printf("total_meters = %d\n", sys_env.total_meters);
 
+#if 0
+	// just for debug
+	strcpy((char*)sys_env.svr_ip, "47.254.143.11");
+	strcpy((char*)sys_env.svr_apn, "CMNET");
+	strcpy((char*)sys_env.svr_port, "10100");
+#endif
+
 	memcpy(g_svr_ip, sys_env.svr_ip, 32);
 	memcpy(g_svr_port, sys_env.svr_port, 8);
 	memcpy(g_svr_apn, sys_env.svr_apn, 32);

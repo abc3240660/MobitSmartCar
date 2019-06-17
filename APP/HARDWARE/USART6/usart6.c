@@ -6,6 +6,8 @@
 #include "timer.h"
 #include "ucos_ii.h"
 #include "blue.h"
+#include "common.h"
+#include <stdlib.h>
 
 __align(8) u8 UART6_TX_BUF[UART6_MAX_SEND_LEN]; 	//发送缓冲,最大UART6_MAX_SEND_LEN字节
 u8 UART6_RX_BUF[UART6_MAX_RECV_LEN]; 				//接收缓冲,最大UART6_MAX_RECV_LEN个字节.
@@ -87,6 +89,7 @@ void UART6_SendData(u8 *str, u16 strlen)
 } 
 
 vu16 UART6_RX_STA = 0;
+extern void hc08_debug_process(u8 *data, u16 num);
 void USART6_IRQHandler(void)
 {
 	u8 res = 0;
@@ -94,7 +97,9 @@ void USART6_IRQHandler(void)
 	OSIntEnter();    
 
 	if (USART_GetFlagStatus(USART6, USART_FLAG_RXNE) != RESET) {
+#if 0
 		res = USART_ReceiveData(USART6);
+		printf("RECVed:%c\r\n", res);
 		if (0 == (UART6_RX_STA&(1<<15))) {
 			if (UART6_RX_STA < UART6_MAX_RECV_LEN) {
 				TIM_SetCounter(TIM3, 0);
@@ -106,6 +111,37 @@ void USART6_IRQHandler(void)
 			} else {
 				UART6_RX_STA |= 1<<15;
 			} 
+		}
+#endif
+		res =USART_ReceiveData(USART6);//(USART3->DR);	//读取接收到的数据
+		
+		if (res != 0) {
+			//printf("BLUEed:%c (%d)\r\n", res, (UART6_RX_STA&0X3FFF));
+			if((UART6_RX_STA&0x8000)==0)//接收未完成
+			{
+				if(UART6_RX_STA&0x4000)//接收到了0x0d
+				{
+					if(res!='Z')UART6_RX_STA=0;//接收错误,重新开始
+					else {
+						UART6_RX_STA|=0x8000;	//接收完成了 
+						UART6_RX_BUF[UART6_RX_STA&0X3FFF]=0;
+						printf("RECVed Msg:%d-%s\r\n", (UART6_RX_STA&0X3FFF), UART6_RX_BUF);
+						hc08_debug_process(UART6_RX_BUF, UART6_RX_STA&0X3FFF);
+						memset(UART6_RX_BUF, 0, UART6_MAX_RECV_LEN);
+						UART6_RX_STA = 0;
+					}
+				}
+				else //还没收到0X0D
+				{	
+					if(res=='Q')UART6_RX_STA|=0x4000;
+					else
+					{
+						UART6_RX_BUF[UART6_RX_STA&0X3FFF]=res;
+						UART6_RX_STA++;
+						if((UART6_RX_STA&0X3FFF)>(UART6_MAX_RECV_LEN-1))UART6_RX_STA=0;//接收数据错误,重新开始接收	  
+					}		 
+				}
+			}
 		}
 	}  											 
 
