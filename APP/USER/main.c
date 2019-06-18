@@ -127,208 +127,206 @@ u8 is_jiffies_timeout(u32 time_start, u16 delayms)
 
 void do_sd_check()
 {
-	u8 res = 0;
-	u16 temp = 0;
-	u32 dtsize = 0;
-	u32 dfsize = 0;
+    u8 res = 0;
+    u16 temp = 0;
+    u32 dtsize = 0;
+    u32 dfsize = 0;
 
-	do {
-		temp++;
-		res = exf_getfree("0:", &dtsize, &dfsize);
-		delay_ms(200);
-	} while (res && (temp<5));
+    do {
+        temp++;
+        res = exf_getfree("0:", &dtsize, &dfsize);
+        delay_ms(200);
+    } while (res && (temp<5));
 
-	if (0 == res) {
-		g_sd_existing = 1;
-		printf("Read SD OK!\r\n");
-	} else {
-		printf("Read SD Failed!\r\n");
-	}
+    if (0 == res) {
+        g_sd_existing = 1;
+        printf("Read SD OK!\r\n");
+    } else {
+        printf("Read SD Failed!\r\n");
+    }
 }
 
 void do_sd_init()
 {
-	u8 sw_ver[64] = "";
-	
-	exfuns_init();// alloc for fats
+    u8 sw_ver[64] = "";
 
-	// This func will call SD_Init internally
-  f_mount(fs[0],"0:",1);
+    exfuns_init();// alloc for fats
 
-	do_sd_check();
+    // This func will call SD_Init internally
+    f_mount(fs[0],"0:",1);
 
-	create_logfile();
-	
-	sprintf((char*)sw_ver, "SW_VER = %s", SW_VERSION);
-	
-	write_logs("SDTF", (char*)sw_ver, strlen((char*)sw_ver), 2);
+    do_sd_check();
+
+    create_logfile();
+
+    sprintf((char*)sw_ver, "SW_VER = %s", SW_VERSION);
+
+    write_logs("SDTF", (char*)sw_ver, strlen((char*)sw_ver), 2);
 }
 
 void mpu6050_init()
 {
-	MPU_Init();
-	
-	delay_ms(200);
-	while (mpu_dmp_init()) {
-		delay_ms(200);
-	}
+    MPU_Init();
+
+    delay_ms(200);
+    while (mpu_dmp_init()) {
+        delay_ms(200);
+    }
 }
 
 void spiflash_init()
 {
-	u32 try_cnt = 10;
-	
-	W25QXX_Init();
+    u32 try_cnt = 10;
 
-	while(W25QXX_ReadID()!=W25Q128 && (try_cnt--)>0) {
-		delay_ms(100);
-	}
-	
-	sys_env_init();
+    W25QXX_Init();
 
-	// Get ENV Params
-	sys_env_dump();
+    while(W25QXX_ReadID()!=W25Q128 && (try_cnt--)>0) {
+        delay_ms(100);
+    }
 
-	g_trip_meters_old = g_trip_meters;
+    sys_env_init();
+
+    // Get ENV Params
+    sys_env_dump();
+
+    g_trip_meters_old = g_trip_meters;
 }
 
 void do_vs_test(void)
 {
-	u16 vs_id = 0;
-	
-	delay_ms(1000);
-	vs_id = VS_Ram_Test();
-	
-	if (0x807F != vs_id) {
-		return;
-	}
-	
-	delay_ms(1000);
-	music_play("0:/MUSIC/OPENLOCK.mp3");
-	
-	while(1) {
-		delay_ms(1000);
-		VS_Sine_Test();
-		delay_ms(1000);
-	}
+    u16 vs_id = 0;
+
+    delay_ms(1000);
+    vs_id = VS_Ram_Test();
+
+    if (0x807F != vs_id) {
+        return;
+    }
+
+    delay_ms(1000);
+    music_play("0:/MUSIC/OPENLOCK.mp3");
+
+    while(1) {
+        delay_ms(1000);
+        VS_Sine_Test();
+        delay_ms(1000);
+    }
 }
 
 void system_init(void)
 {
-	u8 CAN1_mode = 0;
-	u8 CAN2_mode = 0;
-	
-	delay_init(168);
-	uart_init(115200);
-	usart3_init(115200);
-	usart5_init(115200);
-	usart6_init(9600);
- 	LED_Init();
- 	KEY_Init();
-	
-	printf("SmartMotor Starting...\n");
-	// printf("SmartMotor Starting VerSD-TF-Card...\n");
-	// printf("SmartMotor Starting VerSPI...\n");
+    u8 CAN1_mode = 0;
+    u8 CAN2_mode = 0;
 
-	SIM7000E_RST = 1;
-	delay_ms(1000);
+    delay_init(168);
+    uart_init(115200);
+    usart3_init(115200);
+    usart5_init(115200);
+    usart6_init(9600);
+    LED_Init();
+    KEY_Init();
 
-	hc08_init();
+    printf("SmartMotor Starting...\n");
+    // printf("SmartMotor Starting VerSD-TF-Card...\n");
+    // printf("SmartMotor Starting VerSPI...\n");
 
-	My_RTC_Init();
-	RTC_Set_WakeUp(RTC_WakeUpClock_CK_SPRE_16bits,0);
+    SIM7000E_RST = 1;
+    delay_ms(1000);
 
-	CAN1_Mode_Init(CAN1_mode);// 250Kbps
-	CAN2_Mode_Init(CAN2_mode);// 500Kbps
+    hc08_init();
 
-	my_mem_init(SRAMIN);
-	my_mem_init(SRAMCCM);
+    My_RTC_Init();
+    RTC_Set_WakeUp(RTC_WakeUpClock_CK_SPRE_16bits,0);
 
-	TIM2_Init(9999,8399);
-	TIM4_Init(9999,8399);
+    CAN1_Mode_Init(CAN1_mode);// 250Kbps
+    CAN2_Mode_Init(CAN2_mode);// 500Kbps
 
-	// 100ms
-	TIM5_Init(999,8399);
+    my_mem_init(SRAMIN);
+    my_mem_init(SRAMCCM);
 
-	VS_Init();
+    TIM2_Init(9999,8399);
+    TIM4_Init(9999,8399);
 
-	mpu6050_init();
+    // 100ms
+    TIM5_Init(999,8399);
 
-	do_sd_init();
+    VS_Init();
 
-	printf("before spiflash\n");
-	spiflash_init();
-	printf("after spiflash\n");
+    mpu6050_init();
 
-	create_directories();
+    do_sd_init();
 
-	delay_ms(1000);
-	SIM7000E_RST = 0;
-//	
-//	do_vs_test();
-//	
-//	printf("test mp3 ok\n");
+    printf("before spiflash\n");
+    spiflash_init();
+    printf("after spiflash\n");
+
+    create_directories();
+
+    delay_ms(1000);
+    SIM7000E_RST = 0;
+//    do_vs_test();
+//    printf("test mp3 ok\n");
 }
 
 void SoftReset(void)
 {
-	__set_FAULTMASK(1);
-	NVIC_SystemReset();
+    __set_FAULTMASK(1);
+    NVIC_SystemReset();
 }
 
 int main(void)
 {
-	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-	system_init();
-	OSInit();
-	OSTaskCreate(start_task,(void *)0,(OS_STK *)&START_TASK_STK[START_STK_SIZE-1],START_TASK_PRIO);
-	OSStart();
+    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+    system_init();
+    OSInit();
+    OSTaskCreate(start_task,(void *)0,(OS_STK *)&START_TASK_STK[START_STK_SIZE-1],START_TASK_PRIO);
+    OSStart();
 }
 
 void start_task(void *pdata)
 {
-	OS_CPU_SR cpu_sr = 0;
-	pdata = pdata;
-	sem_beep = OSSemCreate(1);
-	sem_atsend = OSSemCreate(1);
+    OS_CPU_SR cpu_sr = 0;
+    pdata = pdata;
+    sem_beep = OSSemCreate(1);
+    sem_atsend = OSSemCreate(1);
 
-	OSStatInit();
+    OSStatInit();
 
-	OS_ENTER_CRITICAL();
-	OSTaskCreate(main_task,(void *)0,(OS_STK*)&MAIN_TASK_STK[MAIN_STK_SIZE-1],MAIN_TASK_PRIO);
-	OSTaskCreate(usart_task,(void *)0,(OS_STK*)&USART_TASK_STK[USART_STK_SIZE-1],USART_TASK_PRIO);
-	OSTaskCreate(timer_task,(void *)0,(OS_STK*)&TIMER_TASK_STK[TIMER_STK_SIZE-1],TIMER_TASK_PRIO);
-	OSTaskCreate(higher_task,(void *)0,(OS_STK*)&HIGHER_TASK_STK[HIGHER_STK_SIZE-1],HIGHER_TASK_PRIO);
-	OSTaskCreate(lower_task,(void *)0,(OS_STK*)&LOWER_TASK_STK[LOWER_STK_SIZE-1],LOWER_TASK_PRIO);
-	OSTaskSuspend(START_TASK_PRIO);
+    OS_ENTER_CRITICAL();
+    OSTaskCreate(main_task,(void *)0,(OS_STK*)&MAIN_TASK_STK[MAIN_STK_SIZE-1],MAIN_TASK_PRIO);
+    OSTaskCreate(usart_task,(void *)0,(OS_STK*)&USART_TASK_STK[USART_STK_SIZE-1],USART_TASK_PRIO);
+    OSTaskCreate(timer_task,(void *)0,(OS_STK*)&TIMER_TASK_STK[TIMER_STK_SIZE-1],TIMER_TASK_PRIO);
+    OSTaskCreate(higher_task,(void *)0,(OS_STK*)&HIGHER_TASK_STK[HIGHER_STK_SIZE-1],HIGHER_TASK_PRIO);
+    OSTaskCreate(lower_task,(void *)0,(OS_STK*)&LOWER_TASK_STK[LOWER_STK_SIZE-1],LOWER_TASK_PRIO);
+    OSTaskSuspend(START_TASK_PRIO);
 
-	OS_EXIT_CRITICAL();
+    OS_EXIT_CRITICAL();
 }
 
 void MPU6050_Risk_Check()
 {
-	u8 ret = 0;
-	float pitch,roll,yaw; 		//欧拉角
-	short aacx,aacy,aacz;		//加速度传感器原始数据
-	short gyrox,gyroy,gyroz;	//陀螺仪原始数据
+    u8 ret = 0;
+    float pitch,roll,yaw;         //欧拉角
+    short aacx,aacy,aacz;        //加速度传感器原始数据
+    short gyrox,gyroy,gyroz;    //陀螺仪原始数据
 
-	ret = mpu_dmp_get_data(&pitch, &roll, &yaw);
-	if (ret == 0) {
-		MPU_Get_Accelerometer(&aacx, &aacy, &aacz);	//得到加速度传感器数据
-		MPU_Get_Gyroscope(&gyrox, &gyroy, &gyroz);	//得到陀螺仪数据
+    ret = mpu_dmp_get_data(&pitch, &roll, &yaw);
+    if (ret == 0) {
+        MPU_Get_Accelerometer(&aacx, &aacy, &aacz);    //得到加速度传感器数据
+        MPU_Get_Gyroscope(&gyrox, &gyroy, &gyroz);    //得到陀螺仪数据
 
-		// printf(" (int)(roll*100)=%d ,(int)(pitch*100)=%d ,(int)(yaw*10)=%d \r\n",(int)(roll*100),(int)(pitch*100),(int)(yaw*10));
-		if((roll*100>4500)||(roll*100<-4500)||(pitch*100>4500)||(pitch*100<-4500)||(yaw*10>450)||(yaw*10<-450))
-		{
-			g_mpu_sta = 1;
-			// printf("FCL \r\n");
-		} else {
-			g_mpu_sta = 0;
-			// printf("MFC \r\n");
-		}
-	} else {
-		// printf("Get mpu data failed! \r\n");
-	}
+        // printf(" (int)(roll*100)=%d ,(int)(pitch*100)=%d ,(int)(yaw*10)=%d \r\n",(int)(roll*100),(int)(pitch*100),(int)(yaw*10));
+        if((roll*100>4500)||(roll*100<-4500)||(pitch*100>4500)||(pitch*100<-4500)||(yaw*10>450)||(yaw*10<-450))
+        {
+            g_mpu_sta = 1;
+            // printf("FCL \r\n");
+        } else {
+            g_mpu_sta = 0;
+            // printf("MFC \r\n");
+        }
+    } else {
+        // printf("Get mpu data failed! \r\n");
+    }
 }
 
 // Play MP3 task
@@ -347,24 +345,24 @@ void lower_task(void *pdata)
 
     g_hbrake_sta_chged = 8;
 
-	while(1) {
-		if (g_mp3_play) {
-			char filename[64] = "";
+    while(1) {
+        if (g_mp3_play) {
+            char filename[64] = "";
 
-			if (strlen((const char*)g_mp3_play_name) < 40) {
-				sprintf(filename, "0:/MUSIC/%s.mp3", g_mp3_play_name);
-				music_play((const char*)filename);
-			}
+            if (strlen((const char*)g_mp3_play_name) < 40) {
+                sprintf(filename, "0:/MUSIC/%s.mp3", g_mp3_play_name);
+                music_play((const char*)filename);
+            }
 
-			g_mp3_play = 0;
-			memset(g_mp3_play_name, 0, LEN_FILE_NAME);
-		}
+            g_mp3_play = 0;
+            memset(g_mp3_play_name, 0, LEN_FILE_NAME);
+        }
 
-		MPU6050_Risk_Check();
+        MPU6050_Risk_Check();
 
-		if (0 == KEY_HAND_BRAKE) {// Locked
-			//printf("g_hbrake_sta_chged LA = 0x%.2x\n", g_hbrake_sta_chged);
-			if ((g_hbrake_sta_chged&0x7F) != 0) {
+        if (0 == KEY_HAND_BRAKE) {// Locked
+            //printf("g_hbrake_sta_chged LA = 0x%.2x\n", g_hbrake_sta_chged);
+            if ((g_hbrake_sta_chged&0x7F) != 0) {
                 if (hbrake_bound_cnt >= 3) {
                     hbrake_bound_cnt = 0;
                     g_hbrake_sta_chged = 0;
@@ -375,9 +373,9 @@ void lower_task(void *pdata)
             } else {
                 hbrake_bound_cnt = 0;
             }
-		} else {// Unlocked
-			//printf("g_hbrake_sta_chged FA = 0x%.2x\n", g_hbrake_sta_chged);
-			if ((g_hbrake_sta_chged&0x7F) != 1) {
+        } else {// Unlocked
+            //printf("g_hbrake_sta_chged FA = 0x%.2x\n", g_hbrake_sta_chged);
+            if ((g_hbrake_sta_chged&0x7F) != 1) {
                 if (hbrake_bound_cnt >= 3) {
                     hbrake_bound_cnt = 0;
                     g_hbrake_sta_chged = 1;
@@ -387,11 +385,11 @@ void lower_task(void *pdata)
                 hbrake_bound_cnt++;
             } else {
                 hbrake_bound_cnt = 0;
-			}
-		}
+            }
+        }
 
-    OSTimeDlyHMSM(0,0,0,500);// 500ms
-	}
+        OSTimeDlyHMSM(0,0,0,500);// 500ms
+    }
 }
 
 extern vu16 MOBIT_RX_STA[U1_RX_BUF_CNT];
@@ -403,42 +401,41 @@ extern u8 U1_MOBIT_RX_PRO_ID;
 // MPU6050 Check and BT Data Parse
 void main_task(void *pdata)
 {
-	u8 i = 0;
-	u8 loop_cnt = 0;
+    u8 i = 0;
+    u8 loop_cnt = 0;
 
-	while(1) {
-		for (i=0; i<U1_RX_BUF_CNT; i++) {			
-			if (MOBIT_RX_STA[U1_MOBIT_RX_PRO_ID]&0X8000) {
-//				if (strstr((const char*)(MOBIT_RX_BUF+U1_RX_LEN_ONE*U1_MOBIT_RX_PRO_ID), PROTOCOL_HEAD)) {
-					sim7500e_mobit_process(U1_MOBIT_RX_PRO_ID);
-//				}
+    while(1) {
+        for (i=0; i<U1_RX_BUF_CNT; i++) {
+            if (MOBIT_RX_STA[U1_MOBIT_RX_PRO_ID]&0X8000) {
+//                if (strstr((const char*)(MOBIT_RX_BUF+U1_RX_LEN_ONE*U1_MOBIT_RX_PRO_ID), PROTOCOL_HEAD)) {
+                    sim7500e_mobit_process(U1_MOBIT_RX_PRO_ID);
+//                }
 
-					
-				MOBIT_RX_STA[U1_MOBIT_RX_PRO_ID] = 0;
-				// next index to process
-				U1_MOBIT_RX_PRO_ID = (U1_MOBIT_RX_PRO_ID+1)%U1_RX_BUF_CNT;
-			}
-		}
+                MOBIT_RX_STA[U1_MOBIT_RX_PRO_ID] = 0;
+                // next index to process
+                U1_MOBIT_RX_PRO_ID = (U1_MOBIT_RX_PRO_ID+1)%U1_RX_BUF_CNT;
+            }
+        }
 
-		if ((g_trip_meters - g_trip_meters_old) > 10) {// Unit: 0.1KM/BIT
-			g_total_meters += (g_trip_meters - g_trip_meters_old) / 10;
-			g_trip_meters_old = g_trip_meters;
-		}
+        if ((g_trip_meters - g_trip_meters_old) > 10) {// Unit: 0.1KM/BIT
+            g_total_meters += (g_trip_meters - g_trip_meters_old) / 10;
+            g_trip_meters_old = g_trip_meters;
+        }
 
-		// Update total_meters into flash
-		if (50 == loop_cnt++) {
-			loop_cnt = 0;
+        // Update total_meters into flash
+        if (50 == loop_cnt++) {
+            loop_cnt = 0;
 
-			if (g_total_meters != g_total_meters_old) {
-				g_total_meters_old = g_total_meters;
-				sys_env_update_meter(g_total_meters);
-			}
+            if (g_total_meters != g_total_meters_old) {
+                g_total_meters_old = g_total_meters;
+                sys_env_update_meter(g_total_meters);
+            }
 
-			printf("main_task test\n");
-		}
+            printf("main_task test\n");
+        }
 
-		OSTimeDlyHMSM(0,0,0,100);// 500ms
-	}
+        OSTimeDlyHMSM(0,0,0,100);// 500ms
+    }
 }
 
 void timer_task(void *pdata)
@@ -510,51 +507,51 @@ void usart_task(void *pdata)
             printf("pluse_num_new = %d\n", pluse_num_new);
         }
 
-		if (1 == g_dw_write_enable) {
-			if (1 == g_sd_existing) {
-				u32 br = 0;
-				u8 res = 0;
-				FIL f_txt;
+        if (1 == g_dw_write_enable) {
+            if (1 == g_sd_existing) {
+                u32 br = 0;
+                u8 res = 0;
+                FIL f_txt;
 
-        if (g_mp3_update != 0) {
-					u8 mp3_file[LEN_FILE_NAME+1] = "";
+                if (g_mp3_update != 0) {
+                    u8 mp3_file[LEN_FILE_NAME+1] = "";
 
-          if (strlen((const char*)g_mp3_update_name) > 40) {
-						g_mp3_update = 0;
-            printf("file name is too long\n");
-            continue;
-          }
+                    if (strlen((const char*)g_mp3_update_name) > 40) {
+                        g_mp3_update = 0;
+                        printf("file name is too long\n");
+                        continue;
+                    }
 
-					sprintf((char*)mp3_file, "0:/MUSIC/%s_tmp.mp3", g_mp3_update_name);
-					res = f_open(&f_txt,(const TCHAR*)mp3_file,FA_READ|FA_WRITE);
-				} else if (g_iap_update != 0) {
-						res = f_open(&f_txt,(const TCHAR*)"0:/IAP/APP.BIN",FA_READ|FA_WRITE);
+                    sprintf((char*)mp3_file, "0:/MUSIC/%s_tmp.mp3", g_mp3_update_name);
+                    res = f_open(&f_txt,(const TCHAR*)mp3_file,FA_READ|FA_WRITE);
+                } else if (g_iap_update != 0) {
+                        res = f_open(&f_txt,(const TCHAR*)"0:/IAP/APP.BIN",FA_READ|FA_WRITE);
+                }
+
+                if (0 == res) {
+                    f_lseek(&f_txt, f_txt.fsize);
+                    f_write(&f_txt, DW_RX_BUF+g_data_pos, g_data_size, (UINT*)&br);
+                    f_close(&f_txt);
+                }
+            }
+
+            g_dw_write_enable = 0;
         }
 
-				if (0 == res) {
-					f_lseek(&f_txt, f_txt.fsize);
-					f_write(&f_txt, DW_RX_BUF+g_data_pos, g_data_size, (UINT*)&br);
-					f_close(&f_txt);
-				}
-			}
-
-			g_dw_write_enable = 0;
-		}
-
-		OSTimeDlyHMSM(0,0,0,500);// 500ms
-		OSTimeDlyHMSM(0,0,0,500);// 500ms
-	}
+        OSTimeDlyHMSM(0,0,0,500);// 500ms
+        OSTimeDlyHMSM(0,0,0,500);// 500ms
+    }
 }
 
 void higher_task(void *pdata)
 {
-	SIM7000E_PWR = 0;
-	delay_ms(4000);
-	SIM7000E_PWR = 1;
-	delay_ms(4000);
-	SIM7000E_PWR = 0;
-	
-	while (1) {
+    SIM7000E_PWR = 0;
+    delay_ms(4000);
+    SIM7000E_PWR = 1;
+    delay_ms(4000);
+    SIM7000E_PWR = 0;
+
+    while (1) {
         if (g_sim_retry_cnt++ > 10) {
             SoftReset();
         }
@@ -565,28 +562,28 @@ void higher_task(void *pdata)
 
 void HardFault_Handler(void)
 {
-	u32 i;
-	u8 t=0;
-	u32 temp;
-	temp=SCB->CFSR;
-	printf("CFSR:%8X\r\n",temp);
-	temp=SCB->HFSR;
-	printf("HFSR:%8X\r\n",temp);
-	temp=SCB->DFSR;
-	printf("DFSR:%8X\r\n",temp);
-	temp=SCB->AFSR;
-	printf("AFSR:%8X\r\n",temp);
+    u32 i;
+    u8 t=0;
+    u32 temp;
+    temp=SCB->CFSR;
+    printf("CFSR:%8X\r\n",temp);
+    temp=SCB->HFSR;
+    printf("HFSR:%8X\r\n",temp);
+    temp=SCB->DFSR;
+    printf("DFSR:%8X\r\n",temp);
+    temp=SCB->AFSR;
+    printf("AFSR:%8X\r\n",temp);
 
-	write_logs("HW ERROR", (char*)"HardFault_Handler -> Reboot\n", strlen((char*)"HardFault_Handler Enter -> Reboot\n"), 3);
-	SoftReset();
+    write_logs("HW ERROR", (char*)"HardFault_Handler -> Reboot\n", strlen((char*)"HardFault_Handler Enter -> Reboot\n"), 3);
+    SoftReset();
 
     LED_G = 0;
 
-	while(t<5)
-	{
-		t++;
-		LED_Y = !LED_Y;
+    while(t<5)
+    {
+        t++;
+        LED_Y = !LED_Y;
         LED_R = !LED_R;
-		for(i=0;i<0X1FFFFF;i++);
-	}
+        for(i=0;i<0X1FFFFF;i++);
+    }
 }
