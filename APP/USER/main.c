@@ -81,6 +81,7 @@ extern u8 USART1_RX_BUF_BAK[U1_RX_LEN_ONE];
 extern u32 os_jiffies;
 int g_mpu_sta = 0;
 
+u8 g_sim_retry_cnt = 0;
 u8 hbrake_bound_cnt = 0;
 
 extern u8 g_gps_active;
@@ -554,9 +555,12 @@ void higher_task(void *pdata)
 	SIM7000E_PWR = 0;
 	
 	while (1) {
-		sim7500e_communication_loop(0,NULL,NULL);
-    OSTimeDlyHMSM(0,0,0,500);// 500ms
-	}
+        if (g_sim_retry_cnt++ > 10) {
+            SoftReset();
+        }
+        sim7500e_communication_loop(0,NULL,NULL);
+        OSTimeDlyHMSM(0,0,0,500);// 500ms
+    }
 }
 
 void HardFault_Handler(void)

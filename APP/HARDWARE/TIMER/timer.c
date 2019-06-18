@@ -461,6 +461,23 @@ void TIM7_IRQHandler(void)
 					u8 k = 0;
 
 					for (i=0; i<(USART1_RX_STA&0X7FFF); i++) {
+                        // RECVED:\r\n> ^MOBIT...
+                        if ('^' == USART1_RX_BUF[i]) {
+                            if (k != 0) {
+                               if (0 == strncmp(USART1_RX_BUF+i, "^MOBIT", strlen("^MOBIT"))) {
+                                    AT_RX_STA[U1_AT_RX_ID] = k;
+                                    AT_RX_STA[U1_AT_RX_ID] |= (1<<15);
+                                    memcpy(AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID, TEMP_RX_BUF, k+1);
+                                    printf("TM RECVED X1(%d) = %s\n", U1_AT_RX_ID, AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID);
+                                    // next index for use
+                                    U1_AT_RX_ID = (U1_AT_RX_ID+1)%U1_RX_BUF_CNT;
+
+                                    k = 0;
+i                                   memset(TEMP_RX_BUF, 0, U1_RX_LEN_ONE);
+                                }
+                            }
+                        }
+
 						TEMP_RX_BUF[k] = USART1_RX_BUF[i];
 						k++;
 						
@@ -474,7 +491,7 @@ void TIM7_IRQHandler(void)
 								printf("TM RECVED X2(%d) = %s\n", U1_MOBIT_RX_ID, MOBIT_RX_BUF+U1_RX_LEN_ONE*U1_MOBIT_RX_ID);
 								// next index for use
 								U1_MOBIT_RX_ID = (U1_MOBIT_RX_ID+1)%U1_RX_BUF_CNT;
-							} else {
+							} else {// RECVED:\r\nAT+XXX\r\n\r\n^MOBIT...
 								AT_RX_STA[U1_AT_RX_ID] = k;
 								AT_RX_STA[U1_AT_RX_ID] |= (1<<15);
 								memcpy(AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID, TEMP_RX_BUF, k+1);
@@ -484,6 +501,7 @@ void TIM7_IRQHandler(void)
 							}
 							
 							k = 0;
+                            memset(TEMP_RX_BUF, 0, U1_RX_LEN_ONE);
 						}
 					}
 				} else {
