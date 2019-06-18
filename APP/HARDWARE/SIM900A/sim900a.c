@@ -1379,13 +1379,13 @@ u8 sim7500e_setup_initial(void)
 
         g_cgatt_sta = 0;
 
-        for (i=0; i<5; i++) {
+        for (i=0; i<15; i++) {
             sim7500e_send_cmd("AT+CGATT?","+CGATT: ",40);
             if (1 == g_cgatt_sta) {
                 break;
             }
 
-            if (4 == i) {
+            if (14 == i) {
                 ret = 1;
                 break;
             }

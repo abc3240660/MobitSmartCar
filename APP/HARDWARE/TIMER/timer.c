@@ -464,7 +464,7 @@ void TIM7_IRQHandler(void)
                         // RECVED:\r\n> ^MOBIT...
                         if ('^' == USART1_RX_BUF[i]) {
                             if (k != 0) {
-                               if (0 == strncmp(USART1_RX_BUF+i, "^MOBIT", strlen("^MOBIT"))) {
+                               if (0 == strncmp((const char*)USART1_RX_BUF+i, "^MOBIT", strlen("^MOBIT"))) {
                                     AT_RX_STA[U1_AT_RX_ID] = k;
                                     AT_RX_STA[U1_AT_RX_ID] |= (1<<15);
                                     memcpy(AT_RX_BUF+U1_RX_LEN_ONE*U1_AT_RX_ID, TEMP_RX_BUF, k+1);
@@ -473,7 +473,7 @@ void TIM7_IRQHandler(void)
                                     U1_AT_RX_ID = (U1_AT_RX_ID+1)%U1_RX_BUF_CNT;
 
                                     k = 0;
-i                                   memset(TEMP_RX_BUF, 0, U1_RX_LEN_ONE);
+                                    memset(TEMP_RX_BUF, 0, U1_RX_LEN_ONE);
                                 }
                             }
                         }

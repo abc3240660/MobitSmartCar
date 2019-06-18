@@ -185,6 +185,7 @@ void USART3_IRQHandler(void)                	//串口1中断服务程序
 					USART_RX_STA|=0x8000;	//接收完成了 
 					debug_process();
 					USART_RX_STA = 0;
+          memset(USART_RX_BUF, 0, USART_REC_LEN);
 				}
 			}
 			else //还没收到0X0D
